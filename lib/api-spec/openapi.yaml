@@ -1,15 +1,32 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: SSI Platform API - Single Smart Interface
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: openai
+    description: OpenAI AI chat, image, and audio operations
+  - name: users
+    description: User profile and authentication
+  - name: documents
+    description: DigiLocker document management
+  - name: forms
+    description: Government forms and applications
+  - name: healthcare
+    description: Healthcare records and reports
+  - name: payments
+    description: Payments and transactions
+  - name: schemes
+    description: Government schemes and services
+  - name: notifications
+    description: Notifications and alerts
+  - name: dashboard
+    description: Dashboard summary and analytics
 paths:
   /healthz:
     get:
@@ -24,6 +41,460 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # OpenAI endpoints
+  /openai/conversations:
+    get:
+      operationId: listOpenaiConversations
+      tags: [openai]
+      summary: List all conversations
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OpenaiConversation"
+    post:
+      operationId: createOpenaiConversation
+      tags: [openai]
+      summary: Create a new conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOpenaiConversationBody"
+      responses:
+        "201":
+          description: Created conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiConversation"
+  /openai/conversations/{id}:
+    get:
+      operationId: getOpenaiConversation
+      tags: [openai]
+      summary: Get conversation with messages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Conversation with messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiConversationWithMessages"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+    delete:
+      operationId: deleteOpenaiConversation
+      tags: [openai]
+      summary: Delete a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+  /openai/conversations/{id}/messages:
+    get:
+      operationId: listOpenaiMessages
+      tags: [openai]
+      summary: List messages in a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OpenaiMessage"
+    post:
+      operationId: sendOpenaiMessage
+      tags: [openai]
+      summary: Send a text message and receive a streaming text response
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendOpenaiMessageBody"
+      responses:
+        "200":
+          description: SSE stream of assistant text chunks
+          content:
+            text/event-stream: {}
+  /openai/conversations/{id}/voice-messages:
+    post:
+      operationId: sendOpenaiVoiceMessage
+      tags: [openai]
+      summary: Send audio and receive a streaming voice response
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendOpenaiVoiceMessageBody"
+      responses:
+        "200":
+          description: SSE stream of transcript and audio chunks
+          content:
+            text/event-stream: {}
+
+  # User profile
+  /users/profile:
+    get:
+      operationId: getUserProfile
+      tags: [users]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+    put:
+      operationId: updateUserProfile
+      tags: [users]
+      summary: Update user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserProfileBody"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /users/activity:
+    get:
+      operationId: getActivityLog
+      tags: [users]
+      summary: Get recent activity log
+      responses:
+        "200":
+          description: Recent activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityEntry"
+
+  # Documents
+  /documents:
+    get:
+      operationId: listDocuments
+      tags: [documents]
+      summary: List all user documents
+      responses:
+        "200":
+          description: List of documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Document"
+  /documents/{id}:
+    get:
+      operationId: getDocument
+      tags: [documents]
+      summary: Get document details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Document detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+
+  # Government Forms
+  /forms:
+    get:
+      operationId: listForms
+      tags: [forms]
+      summary: List available government forms
+      responses:
+        "200":
+          description: List of forms
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GovernmentForm"
+  /forms/{id}:
+    get:
+      operationId: getForm
+      tags: [forms]
+      summary: Get form with fields
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Form with fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GovernmentFormDetail"
+  /forms/{id}/submit:
+    post:
+      operationId: submitForm
+      tags: [forms]
+      summary: Submit a government form
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FormSubmitBody"
+      responses:
+        "200":
+          description: Form submission result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormSubmitResult"
+
+  # Healthcare
+  /health/profile:
+    get:
+      operationId: getHealthProfile
+      tags: [healthcare]
+      summary: Get user health profile
+      responses:
+        "200":
+          description: Health profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthProfile"
+  /health/records:
+    get:
+      operationId: listHealthRecords
+      tags: [healthcare]
+      summary: List health records and reports
+      responses:
+        "200":
+          description: Health records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HealthRecord"
+
+  # Payments
+  /payments:
+    get:
+      operationId: listTransactions
+      tags: [payments]
+      summary: List payment transactions
+      responses:
+        "200":
+          description: Transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+  /payments/bills:
+    get:
+      operationId: listBills
+      tags: [payments]
+      summary: List pending bills
+      responses:
+        "200":
+          description: Pending bills
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Bill"
+  /payments/pay:
+    post:
+      operationId: makePayment
+      tags: [payments]
+      summary: Make a payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MakePaymentBody"
+      responses:
+        "200":
+          description: Payment result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResult"
+
+  # Government Schemes
+  /schemes:
+    get:
+      operationId: listSchemes
+      tags: [schemes]
+      summary: List government schemes
+      responses:
+        "200":
+          description: Government schemes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Scheme"
+  /schemes/{id}/eligibility:
+    get:
+      operationId: checkSchemeEligibility
+      tags: [schemes]
+      summary: Check eligibility for a scheme
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Eligibility result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EligibilityResult"
+  /schemes/complaints:
+    post:
+      operationId: submitComplaint
+      tags: [schemes]
+      summary: Submit a complaint or issue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ComplaintBody"
+      responses:
+        "201":
+          description: Complaint submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplaintResult"
+
+  # Notifications
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+  /notifications/{id}/read:
+    post:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark a notification as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated notification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
+  # Dashboard
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary stats
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +505,527 @@ components:
       required:
         - status
 
+    # OpenAI schemas
+    OpenaiConversation:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - createdAt
+    OpenaiMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        conversationId:
+          type: integer
+        role:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - conversationId
+        - role
+        - content
+        - createdAt
+    CreateOpenaiConversationBody:
+      type: object
+      properties:
+        title:
+          type: string
+      required:
+        - title
+    SendOpenaiMessageBody:
+      type: object
+      properties:
+        content:
+          type: string
+        language:
+          type: string
+          description: Language for response (en, hi, kn)
+        context:
+          type: string
+          description: Current app module/context
+      required:
+        - content
+    SendOpenaiVoiceMessageBody:
+      type: object
+      properties:
+        audio:
+          type: string
+          description: Base64-encoded audio data
+      required:
+        - audio
+    OpenaiConversationWithMessages:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/OpenaiMessage"
+      required:
+        - id
+        - title
+        - createdAt
+        - messages
+    OpenaiError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    # User schemas
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        ssiId:
+          type: string
+        name:
+          type: string
+        phone:
+          type: string
+        preferredLanguage:
+          type: string
+        isKioskMode:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - ssiId
+        - name
+        - phone
+        - preferredLanguage
+        - isKioskMode
+        - createdAt
+    UpdateUserProfileBody:
+      type: object
+      properties:
+        name:
+          type: string
+        preferredLanguage:
+          type: string
+        isKioskMode:
+          type: boolean
+    ActivityEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        action:
+          type: string
+        module:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - action
+        - module
+        - description
+        - createdAt
+
+    # Document schemas
+    Document:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        name:
+          type: string
+        documentNumber:
+          type: string
+        issuedDate:
+          type: string
+        expiryDate:
+          type: string
+        status:
+          type: string
+        description:
+          type: string
+      required:
+        - id
+        - type
+        - name
+        - documentNumber
+        - status
+
+    # Form schemas
+    GovernmentForm:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        estimatedTime:
+          type: string
+        isPopular:
+          type: boolean
+      required:
+        - id
+        - name
+        - category
+        - description
+        - estimatedTime
+        - isPopular
+    FormField:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        type:
+          type: string
+        required:
+          type: boolean
+        placeholder:
+          type: string
+        helpText:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - label
+        - type
+        - required
+    GovernmentFormDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        estimatedTime:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/FormField"
+      required:
+        - id
+        - name
+        - category
+        - description
+        - estimatedTime
+        - fields
+    FormSubmitBody:
+      type: object
+      properties:
+        data:
+          type: object
+      required:
+        - data
+    FormSubmitResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        referenceNumber:
+          type: string
+        message:
+          type: string
+      required:
+        - success
+        - referenceNumber
+        - message
+
+    # Healthcare schemas
+    HealthProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        bloodGroup:
+          type: string
+        height:
+          type: number
+        weight:
+          type: number
+        allergies:
+          type: array
+          items:
+            type: string
+        conditions:
+          type: array
+          items:
+            type: string
+        lastCheckup:
+          type: string
+          format: date-time
+      required:
+        - id
+        - bloodGroup
+    HealthRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+          format: date-time
+        doctor:
+          type: string
+        hospital:
+          type: string
+        aiSummary:
+          type: string
+      required:
+        - id
+        - type
+        - title
+        - date
+
+    # Payment schemas
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        amount:
+          type: number
+        recipient:
+          type: string
+        status:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - amount
+        - recipient
+        - status
+        - createdAt
+    Bill:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        provider:
+          type: string
+        amount:
+          type: number
+        dueDate:
+          type: string
+          format: date-time
+        isPaid:
+          type: boolean
+        accountNumber:
+          type: string
+      required:
+        - id
+        - type
+        - provider
+        - amount
+        - dueDate
+        - isPaid
+    MakePaymentBody:
+      type: object
+      properties:
+        billId:
+          type: integer
+        amount:
+          type: number
+        upiId:
+          type: string
+        description:
+          type: string
+      required:
+        - amount
+    PaymentResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        transactionId:
+          type: string
+        amount:
+          type: number
+        message:
+          type: string
+      required:
+        - success
+        - transactionId
+        - amount
+        - message
+
+    # Scheme schemas
+    Scheme:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        benefits:
+          type: string
+        eligibility:
+          type: string
+        applicationLink:
+          type: string
+        isActive:
+          type: boolean
+      required:
+        - id
+        - name
+        - category
+        - description
+        - benefits
+        - isActive
+    EligibilityResult:
+      type: object
+      properties:
+        eligible:
+          type: boolean
+        reason:
+          type: string
+        requirements:
+          type: array
+          items:
+            type: string
+        nextSteps:
+          type: string
+      required:
+        - eligible
+        - reason
+    ComplaintBody:
+      type: object
+      properties:
+        category:
+          type: string
+        subject:
+          type: string
+        description:
+          type: string
+        schemeId:
+          type: integer
+      required:
+        - category
+        - subject
+        - description
+    ComplaintResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        referenceNumber:
+          type: string
+        message:
+          type: string
+      required:
+        - id
+        - referenceNumber
+        - message
+
+    # Notification schemas
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        message:
+          type: string
+        type:
+          type: string
+        isRead:
+          type: boolean
+        module:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - message
+        - type
+        - isRead
+        - createdAt
+
+    # Dashboard schemas
+    DashboardSummary:
+      type: object
+      properties:
+        pendingBills:
+          type: integer
+        unreadNotifications:
+          type: integer
+        documentsCount:
+          type: integer
+        recentTransactions:
+          type: integer
+        availableSchemes:
+          type: integer
+        pendingForms:
+          type: integer
+        lastLogin:
+          type: string
+          format: date-time
+      required:
+        - pendingBills
+        - unreadNotifications
+        - documentsCount
+        - recentTransactions
+        - availableSchemes
+        - pendingForms

@@ -1,8 +1,8 @@
-# Workspace
+# SSI Platform — Single Smart Interface
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+A full-stack, production-quality, AI-powered digital inclusion platform for India — a unified super app for accessing government, financial, healthcare, and identity-based services. Designed for both urban smartphone users and rural kiosk-based users.
 
 ## Stack
 
@@ -10,8 +10,10 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Node.js version**: 24
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
+- **Frontend**: React + Vite + Tailwind CSS + ShadCN UI + Framer Motion
 - **API framework**: Express 5
 - **Database**: PostgreSQL + Drizzle ORM
+- **AI**: OpenAI via Replit AI Integrations (gpt-5.2 for chat)
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
@@ -20,77 +22,117 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 
 ```text
 artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
-├── lib/                    # Shared libraries
+├── artifacts/
+│   ├── api-server/         # Express API server — all backend routes
+│   └── ssi-platform/       # React frontend at /
+├── lib/
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks
 │   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (single workspace package)
-│   └── src/                # Individual .ts scripts, run via `pnpm --filter @workspace/scripts run <script>`
-├── pnpm-workspace.yaml     # pnpm workspace (artifacts/*, lib/*, lib/integrations/*, scripts)
-├── tsconfig.base.json      # Shared TS options (composite, bundler resolution, es2022)
-├── tsconfig.json           # Root TS project references
-└── package.json            # Root package with hoisted devDeps
+│   ├── db/                 # Drizzle ORM schema + DB connection
+│   ├── integrations-openai-ai-server/  # OpenAI server-side integration
+│   └── integrations-openai-ai-react/   # OpenAI React hooks (voice)
+├── scripts/                # Utility scripts
+├── pnpm-workspace.yaml
+├── tsconfig.base.json
+├── tsconfig.json
+└── package.json
 ```
 
-## TypeScript & Composite Projects
+## Features
 
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references. This means:
+### 1. Identity Layer
+- User profile with SSI ID (unique ID), name, phone, language preference
+- Single default user (can be extended to multi-user with auth)
 
-- **Always typecheck from the root** — run `pnpm run typecheck` (which runs `tsc --build --emitDeclarationOnly`). This builds the full dependency graph so that cross-package imports resolve correctly. Running `tsc` inside a single package will fail if its dependencies haven't been built yet.
-- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck; actual JS bundling is handled by esbuild/tsx/vite...etc, not `tsc`.
-- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array. `tsc --build` uses this to determine build order and skip up-to-date packages.
+### 2. AI Assistant
+- Floating chat widget visible on all pages
+- Full-page AI chat at /ai-assistant
+- Streaming responses via SSE (gpt-5.2)
+- Multilingual: English, Hindi, Kannada
+- Voice input hook available via integrations-openai-ai-react
 
-## Root Scripts
+### 3. Dashboard
+- Service module cards: ATM, Documents, Forms, Healthcare, Payments, Schemes, Notifications
+- Live data counts from backend
+- Recent activity log
+- Collapsible sidebar navigation
+- Language switcher (EN/HI/KN)
+- Dark/Light mode toggle
 
-- `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages that define it
-- `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
+### 4. Service Modules
+- **ATM Assistant** (/atm) — Step-by-step guided ATM workflow
+- **Documents** (/documents) — DigiLocker simulation (Aadhaar, PAN, DL, Voter ID)
+- **Forms** (/forms, /forms/:id) — Dynamic government form builder with AI help
+- **Healthcare** (/healthcare) — Health records, vitals, AI report explanation
+- **Payments** (/payments) — Bill payments, UPI simulation, transaction history
+- **Schemes** (/schemes) — Government scheme directory with eligibility check
+- **Notifications** (/notifications) — Notification center with mark-as-read
+- **Profile** (/profile) — User settings, language, Kiosk Mode toggle
 
-## Packages
+### 5. Kiosk Mode
+- Toggle in profile page
+- Larger buttons and text for low-literacy users
+- Context available via KioskModeContext
 
-### `artifacts/api-server` (`@workspace/api-server`)
+### 6. Multilingual Support
+- i18n via LanguageContext
+- Languages: English, Hindi, Kannada
+- AI responds in selected language
 
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
+## Database Tables
 
-- Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
-- `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
+- `users` — user profiles with SSI ID
+- `activity_log` — user activity log
+- `documents` — DigiLocker documents
+- `government_forms` — form definitions with JSON fields
+- `form_submissions` — submitted forms
+- `health_profiles` — health vitals and info
+- `health_records` — medical records/reports
+- `transactions` — payment transactions
+- `bills` — pending and paid bills
+- `schemes` — government schemes
+- `complaints` — complaint/issue reports
+- `notifications` — user notifications
+- `conversations` — AI chat conversations
+- `messages` — AI chat messages
 
-### `lib/db` (`@workspace/db`)
+## API Routes (all under /api)
 
-Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
+- `GET /api/healthz` — health check
+- `GET/PUT /api/users/profile` — user profile
+- `GET /api/users/activity` — activity log
+- `GET /api/documents` — list documents
+- `GET /api/documents/:id` — single document
+- `GET /api/forms` — list government forms
+- `GET /api/forms/:id` — form with fields
+- `POST /api/forms/:id/submit` — submit form
+- `GET /api/health/profile` — health profile
+- `GET /api/health/records` — health records
+- `GET /api/payments` — transactions
+- `GET /api/payments/bills` — pending bills
+- `POST /api/payments/pay` — make payment
+- `GET /api/schemes` — government schemes
+- `GET /api/schemes/:id/eligibility` — eligibility check
+- `POST /api/schemes/complaints` — file complaint
+- `GET /api/notifications` — notifications
+- `POST /api/notifications/:id/read` — mark read
+- `GET /api/dashboard/summary` — dashboard stats
+- `GET/POST /api/openai/conversations` — AI conversations
+- `GET/DELETE /api/openai/conversations/:id` — single conversation
+- `GET/POST /api/openai/conversations/:id/messages` — messages (SSE streaming)
 
-- `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
-- `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
-- Exports: `.` (pool, db, schema), `./schema` (schema only)
+## Environment Variables
 
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
+- `DATABASE_URL` — PostgreSQL connection string (auto-set by Replit)
+- `AI_INTEGRATIONS_OPENAI_BASE_URL` — Replit AI proxy base URL
+- `AI_INTEGRATIONS_OPENAI_API_KEY` — Replit AI proxy API key
+- `SESSION_SECRET` — session secret
+- `PORT` — assigned port per artifact
 
-### `lib/api-spec` (`@workspace/api-spec`)
+## Running
 
-Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
-
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
-
-Run codegen: `pnpm --filter @workspace/api-spec run codegen`
-
-### `lib/api-zod` (`@workspace/api-zod`)
-
-Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used by `api-server` for response validation.
-
-### `lib/api-client-react` (`@workspace/api-client-react`)
-
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
-
-### `scripts` (`@workspace/scripts`)
-
-Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+- API server: `pnpm --filter @workspace/api-server run dev`
+- Frontend: `pnpm --filter @workspace/ssi-platform run dev`
+- Codegen: `pnpm --filter @workspace/api-spec run codegen`
+- DB push: `pnpm --filter @workspace/db run push`

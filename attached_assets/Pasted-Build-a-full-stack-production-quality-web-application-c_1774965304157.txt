@@ -1,0 +1,254 @@
+Build a full-stack production-quality web application called:
+
+"SSI Platform (Single Smart Interface)"
+— a unified AI-powered platform for accessing essential government, financial, healthcare, and identity-based services in one place.
+
+The platform should be designed for both:
+1) Urban smartphone users
+2) Rural kiosk-based users with low digital literacy
+
+---
+
+⚡ TECH STACK:
+
+Frontend:
+- React (Vite) + Tailwind CSS + ShadCN UI
+- Framer Motion (animations)
+
+Backend:
+- Node.js + Express
+
+Database:
+- Firebase (Firestore + Authentication)
+
+AI Layer:
+- OpenAI API (chat + intent detection)
+- Web Speech API (speech-to-text + text-to-speech)
+
+---
+
+🎯 CORE PRODUCT ARCHITECTURE:
+
+The system should be modular and structured into layers:
+
+1. Identity Layer
+2. AI Assistant Layer
+3. Service Modules Layer
+4. Security Layer
+5. Personalization Layer
+
+---
+
+🔐 1. IDENTITY LAYER:
+
+- Firebase Authentication (OTP simulation)
+- User profile:
+  - Name
+  - Phone
+  - Preferred language
+- SSI ID (unique user ID)
+- Simple PIN-based re-authentication (mock)
+- Family linking (basic UI simulation)
+
+---
+
+🤖 2. AI ASSISTANT (CENTRAL BRAIN):
+
+- Floating AI assistant (bottom-right)
+- Accept:
+  - Text input
+  - Voice input (mic button)
+
+- Capabilities:
+  - Intent detection (route user to modules)
+  - Task-based commands:
+    Examples:
+    - "ATM kaise use kare?"
+    - "Mera Aadhaar dikhao"
+    - "Form bharna hai"
+    - "Electricity bill bhar do"
+    - "Meri health report explain karo"
+
+- AI responses:
+  - Simple, multilingual
+  - Voice output + text output
+
+---
+
+🏠 3. DASHBOARD (SUPER APP UI):
+
+- Clean, modern UI with large accessible cards:
+  - 🏧 ATM Assistant
+  - 📄 Documents
+  - 📝 Government Forms
+  - 🏥 Healthcare
+  - 💸 Payments
+  - 📢 Govt Services
+  - 🔔 Notifications
+
+- Sidebar navigation (collapsible)
+- Top ribbon with app branding
+- Dark + Light mode
+
+---
+
+🧩 4. SERVICE MODULES:
+
+A. 🏧 ATM ASSISTANT
+- Step-by-step guided interface
+- Voice-guided instructions
+- Simulated ATM workflow
+
+---
+
+B. 📄 DOCUMENTS (DigiLocker Simulation)
+- Aadhaar, PAN, Certificates
+- View + Download UI
+- AI explanation of documents
+
+---
+
+C. 📝 GOVERNMENT FORMS
+- Dynamic form builder
+- Auto-fill (mock AI)
+- Field explanation (AI help tooltip)
+
+---
+
+D. 🏥 HEALTHCARE
+- Upload/view reports
+- Timeline of medical history
+- Basic health profile
+- AI explanation of reports (mock)
+
+---
+
+E. 💸 PAYMENTS
+- UPI simulation
+- Bill payments
+- Transaction success UI
+
+---
+
+F. 📢 GOV SERVICES
+- Scheme listings
+- Eligibility check (mock logic)
+- Complaint/issue reporting UI
+
+---
+
+G. 🔔 NOTIFICATIONS
+- Bill reminders
+- Scheme alerts
+- Activity updates
+
+---
+
+🔐 5. SECURITY LAYER:
+
+- OTP simulation
+- Activity log:
+  - “Recent actions”
+- “Who accessed my data” page (mock)
+- Basic session handling
+
+---
+
+🌐 6. MULTILINGUAL SUPPORT:
+
+- English, Hindi, Kannada
+- JSON-based translation system
+- AI responds in selected language
+
+---
+
+🧑‍🤝‍🧑 7. PERSONALIZATION:
+
+- Frequently used services
+- Smart suggestions:
+  - “You have a pending bill”
+- Language memory
+
+---
+
+🏪 8. KIOSK MODE (IMPORTANT):
+
+- Toggle: Normal Mode / Kiosk Mode
+- Kiosk Mode features:
+  - Large buttons
+  - Voice-first UI
+  - Minimal text
+  - Guided navigation
+
+---
+
+📡 9. LOW CONNECTIVITY SUPPORT (SIMULATED):
+
+- Cached UI screens
+- Offline fallback message
+- Graceful error handling
+
+---
+
+🎨 UI/UX REQUIREMENTS:
+
+- Premium modern design (PhonePe + Notion + Govt hybrid)
+- Glassmorphism cards
+- Soft shadows + gradients
+- Smooth animations (Framer Motion)
+- Fully responsive (mobile-first)
+- Accessibility-focused:
+  - Large fonts
+  - Simple layouts
+
+---
+
+📁 PROJECT STRUCTURE:
+
+/client
+  /components
+  /pages
+  /layouts
+  /services
+  /utils
+
+/server
+  /routes
+  /controllers
+  /services
+
+/firebase
+/config
+
+---
+
+⚙️ BACKEND API ROUTES:
+
+- /chat → AI assistant
+- /documents
+- /forms
+- /health
+- /payments
+- /notifications
+
+---
+
+🎯 OUTPUT REQUIREMENTS:
+
+- Fully working modular app
+- Clean, readable code
+- Proper folder structure
+- Environment variables for API keys
+- Mock data where real APIs unavailable
+- Comments explaining logic
+
+---
+
+🎯 FINAL GOAL:
+
+Build a real-world, scalable, AI-powered digital inclusion platform that can be used as:
+- A mobile app
+- A rural kiosk system
+- A government service aggregator
+
+This should look like a startup-grade product and portfolio-level project suitable for placements and hackathons.
