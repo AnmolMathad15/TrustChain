@@ -35,4 +35,32 @@ router.post("/:id/read", async (req, res) => {
   }
 });
 
+// POST /notifications/mark-all-read
+router.post("/mark-all-read", async (req, res) => {
+  try {
+    await db
+      .update(notificationsTable)
+      .set({ isRead: true })
+      .where(eq(notificationsTable.userId, DEFAULT_USER_ID));
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({ err }, "Failed to mark all notifications read");
+    res.status(500).json({ error: "Failed to mark all as read" });
+  }
+});
+
+// POST /notifications/reset-unread — marks all notifications as unread (test/demo helper)
+router.post("/reset-unread", async (req, res) => {
+  try {
+    await db
+      .update(notificationsTable)
+      .set({ isRead: false })
+      .where(eq(notificationsTable.userId, DEFAULT_USER_ID));
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({ err }, "Failed to reset notifications to unread");
+    res.status(500).json({ error: "Failed to reset notifications" });
+  }
+});
+
 export default router;

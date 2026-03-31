@@ -1,41 +1,71 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
-import { CreditCard, CheckCircle2, ChevronRight, Volume2, Landmark } from "lucide-react";
+import { CreditCard, CheckCircle2, Volume2, VolumeX, Landmark } from "lucide-react";
 import { useKioskMode } from "../contexts/KioskModeContext";
 import { useMakePayment } from "@workspace/api-client-react";
 
 type Step = 'INSERT_CARD' | 'PIN' | 'TRANSACTION' | 'AMOUNT' | 'CONFIRM' | 'COMPLETE';
+
+const STEP_VOICE_GUIDE: Record<Step, string> = {
+  INSERT_CARD: "Welcome to SSI ATM Assistant. Please insert your card or tap your phone to begin.",
+  PIN: "Please enter your 4-digit PIN using the number pad. Your PIN is hidden for security.",
+  TRANSACTION: "Please select your transaction type. Options are Cash Withdrawal, Balance Enquiry, Mini Statement, or PIN Change.",
+  AMOUNT: "Please enter the amount you wish to withdraw. You can choose from preset amounts or type a custom amount.",
+  CONFIRM: "Please review your transaction details and confirm to proceed.",
+  COMPLETE: "Transaction successful! Please collect your cash. Thank you for using SSI Platform.",
+};
 
 export default function AtmAssistant() {
   const { isKioskMode } = useKioskMode();
   const [step, setStep] = useState<Step>('INSERT_CARD');
   const [pin, setPin] = useState("");
   const [amount, setAmount] = useState("");
-  
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
   const makePayment = useMakePayment();
+
+  const speakStep = useCallback((targetStep?: Step) => {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const text = STEP_VOICE_GUIDE[targetStep ?? step];
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-IN";
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    window.speechSynthesis.speak(utterance);
+  }, [step]);
+
+  const goToStep = (next: Step) => {
+    setStep(next);
+    speakStep(next);
+  };
 
   const handleNext = () => {
     switch (step) {
-      case 'INSERT_CARD': setStep('PIN'); break;
-      case 'PIN': 
-        if (pin.length === 4) setStep('TRANSACTION');
+      case 'INSERT_CARD': goToStep('PIN'); break;
+      case 'PIN':
+        if (pin.length === 4) goToStep('TRANSACTION');
         break;
-      case 'TRANSACTION': setStep('AMOUNT'); break;
-      case 'AMOUNT': 
-        if (amount) setStep('CONFIRM');
+      case 'TRANSACTION': goToStep('AMOUNT'); break;
+      case 'AMOUNT':
+        if (amount) goToStep('CONFIRM');
         break;
       case 'CONFIRM':
         makePayment.mutate({ data: { amount: parseFloat(amount), upiId: "atm-withdrawal" } }, {
-          onSuccess: () => setStep('COMPLETE')
+          onSuccess: () => goToStep('COMPLETE'),
         });
         break;
-      case 'COMPLETE': 
+      case 'COMPLETE':
         setStep('INSERT_CARD');
         setPin("");
         setAmount("");
+        window.speechSynthesis?.cancel();
+        setIsSpeaking(false);
         break;
     }
   };
@@ -168,9 +198,13 @@ export default function AtmAssistant() {
       <div className="w-full max-w-4xl">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-primary tracking-tight">ATM Assistant</h1>
-          <Button variant="secondary" className="gap-2 h-12 px-6 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200">
-            <Volume2 className="w-5 h-5" />
-            Voice Guide
+          <Button
+            variant="secondary"
+            className={`gap-2 h-12 px-6 rounded-full border transition-all ${isSpeaking ? "bg-blue-100 text-blue-800 border-blue-300 animate-pulse" : "bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200"}`}
+            onClick={() => isSpeaking ? (window.speechSynthesis.cancel(), setIsSpeaking(false)) : speakStep()}
+          >
+            {isSpeaking ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            {isSpeaking ? "Stop" : "Voice Guide"}
           </Button>
         </div>
 

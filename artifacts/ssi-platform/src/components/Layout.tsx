@@ -22,6 +22,7 @@ import { useLanguage } from "../contexts/LanguageContext";
 import { useKioskMode } from "../contexts/KioskModeContext";
 import { useHighContrast } from "../contexts/HighContrastContext";
 import { useTheme } from "next-themes";
+import { useListNotifications } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -85,6 +86,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { theme, setTheme } = useTheme();
   const { isHighContrast, setHighContrast } = useHighContrast();
   const [location] = useLocation();
+  const { data: notifications } = useListNotifications();
+
+  const unreadCount = notifications?.filter((n: any) => !n.isRead).length ?? 0;
 
   const navItems: NavItemConfig[] = [
     { href: "/", icon: Home, label: t("nav.dashboard") },
@@ -94,7 +98,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/healthcare", icon: Heart, label: t("nav.healthcare") },
     { href: "/payments", icon: Wallet, label: t("nav.payments") },
     { href: "/schemes", icon: Umbrella, label: t("nav.schemes") },
-    { href: "/notifications", icon: Bell, label: t("nav.notifications") },
+    { href: "/notifications", icon: Bell, label: t("nav.notifications"), badge: unreadCount },
     { href: "/security", icon: Shield, label: "Security" },
     { href: "/profile", icon: User, label: t("nav.profile") },
     { href: "/ai-assistant", icon: Bot, label: t("nav.ai_assistant") },
@@ -164,7 +168,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/notifications">
               <Button variant="ghost" size="icon" className="relative h-9 w-9">
                 <Bell className="h-4 w-4" />
-                <span className="absolute top-1.5 right-2 h-2 w-2 bg-destructive rounded-full" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold px-1 bg-destructive text-destructive-foreground rounded-full leading-none">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
               </Button>
             </Link>
           </div>

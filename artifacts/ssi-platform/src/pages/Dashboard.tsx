@@ -1,5 +1,6 @@
 import React from "react";
 import { useGetDashboardSummary, useGetUserProfile, useListNotifications, useListBills } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
@@ -7,7 +8,7 @@ import { useKioskMode } from "../contexts/KioskModeContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { Link } from "wouter";
 import { CreditCard, FileText, FileEdit, Heart, Wallet, Umbrella, Bell, ChevronRight, Sparkles } from "lucide-react";
-import { format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 
 export default function Dashboard() {
   const { data: profile, isLoading: isProfileLoading } = useGetUserProfile();
@@ -16,6 +17,12 @@ export default function Dashboard() {
   const { data: bills } = useListBills();
   const { isKioskMode } = useKioskMode();
   const { t } = useLanguage();
+
+  const { data: activityLog = [] } = useQuery<any[]>({
+    queryKey: ["activity-log"],
+    queryFn: () => fetch("/api/admin/activity").then((r) => r.json()),
+    refetchInterval: 30_000,
+  });
 
   const modules = [
     { href: "/atm", icon: CreditCard, label: t("nav.atm"), color: "from-blue-500 to-blue-600", count: null },
@@ -148,19 +155,22 @@ export default function Dashboard() {
               <CardTitle>{t("recent_activity")}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="relative border-l ml-2 space-y-4 pb-2">
-                {[
-                  { label: "Electricity Bill Paid", time: "Today at 10:30 AM", active: true },
-                  { label: "Aadhaar Card Viewed", time: "Yesterday", active: false },
-                  { label: "PM-KISAN Eligibility Checked", time: "2 days ago", active: false },
-                ].map((item, i) => (
-                  <div key={i} className="pl-5 relative">
-                    <div className={`absolute w-2.5 h-2.5 rounded-full -left-[5px] top-1.5 ring-4 ring-background ${item.active ? "bg-primary" : "bg-muted-foreground/30"}`} />
-                    <p className="text-sm font-medium">{item.label}</p>
-                    <p className="text-xs text-muted-foreground">{item.time}</p>
-                  </div>
-                ))}
-              </div>
+              {activityLog.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">No recent activity yet.</p>
+              ) : (
+                <div className="relative border-l ml-2 space-y-4 pb-2">
+                  {activityLog.slice(0, 5).map((item: any, i: number) => (
+                    <div key={item.id ?? i} className="pl-5 relative">
+                      <div className={`absolute w-2.5 h-2.5 rounded-full -left-[5px] top-1.5 ring-4 ring-background ${i === 0 ? "bg-primary" : "bg-muted-foreground/30"}`} />
+                      <p className="text-sm font-medium capitalize">{item.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.module && <span className="capitalize mr-1 text-primary/70">[{item.module}]</span>}
+                        {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 

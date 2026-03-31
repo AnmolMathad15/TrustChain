@@ -1,15 +1,30 @@
-import React from "react";
-import { useListNotifications, useMarkNotificationRead } from "@workspace/api-client-react";
+import React, { useState } from "react";
+import { useListNotifications, useMarkNotificationRead, getListNotificationsQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Bell, Heart, Wallet, FileText, Check } from "lucide-react";
+import { Bell, Heart, Wallet, FileText, Check, CheckCheck } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 export default function Notifications() {
   const { data: notifications, isLoading } = useListNotifications();
   const markRead = useMarkNotificationRead();
+  const queryClient = useQueryClient();
+  const [isMarkingAll, setIsMarkingAll] = useState(false);
+
+  const unreadCount = notifications?.filter((n) => !n.isRead).length ?? 0;
+
+  const handleMarkAllRead = async () => {
+    setIsMarkingAll(true);
+    try {
+      await fetch("/api/notifications/mark-all-read", { method: "POST" });
+      await queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() });
+    } finally {
+      setIsMarkingAll(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -38,8 +53,23 @@ export default function Notifications() {
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight">Notifications</h2>
-        <Button variant="ghost" className="text-primary">Mark all as read</Button>
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Notifications</h2>
+          {unreadCount > 0 && (
+            <p className="text-sm text-muted-foreground mt-0.5">{unreadCount} unread</p>
+          )}
+        </div>
+        {unreadCount > 0 && (
+          <Button
+            variant="ghost"
+            className="text-primary gap-2"
+            onClick={handleMarkAllRead}
+            disabled={isMarkingAll}
+          >
+            <CheckCheck className="h-4 w-4" />
+            {isMarkingAll ? "Marking..." : "Mark all as read"}
+          </Button>
+        )}
       </div>
 
       <div className="space-y-3">
