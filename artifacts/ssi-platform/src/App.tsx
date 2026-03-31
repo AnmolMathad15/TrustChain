@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Layout from "./components/Layout";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { KioskModeProvider } from "./contexts/KioskModeContext";
+import { HighContrastProvider } from "./contexts/HighContrastContext";
 
 // Pages
 import Dashboard from "./pages/Dashboard";
@@ -20,8 +21,17 @@ import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
 import AtmAssistant from "./pages/AtmAssistant";
 import AiAssistant from "./pages/AiAssistant";
+import Admin from "./pages/Admin";
+import Security from "./pages/Security";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      staleTime: 30_000,
+    },
+  },
+});
 
 function Router() {
   return (
@@ -38,6 +48,8 @@ function Router() {
         <Route path="/profile" component={Profile} />
         <Route path="/atm" component={AtmAssistant} />
         <Route path="/ai-assistant" component={AiAssistant} />
+        <Route path="/admin" component={Admin} />
+        <Route path="/security" component={Security} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
@@ -51,10 +63,12 @@ function App() {
         <TooltipProvider>
           <LanguageProvider>
             <KioskModeProvider>
-              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-                <Router />
-              </WouterRouter>
-              <Toaster />
+              <HighContrastProvider>
+                <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                  <Router />
+                </WouterRouter>
+                <Toaster />
+              </HighContrastProvider>
             </KioskModeProvider>
           </LanguageProvider>
         </TooltipProvider>

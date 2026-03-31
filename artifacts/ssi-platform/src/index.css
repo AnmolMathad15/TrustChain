@@ -310,3 +310,28 @@
     inset: -1px;
   }
 }
+
+/* High Contrast Mode */
+.high-contrast {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
+  --border: 0 0% 0%;
+  --muted: 0 0% 90%;
+  --muted-foreground: 0 0% 10%;
+  --primary: 220 100% 30%;
+  --primary-foreground: 0 0% 100%;
+}
+
+.dark.high-contrast {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 5%;
+  --card-foreground: 0 0% 100%;
+  --border: 0 0% 100%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 90%;
+  --primary: 220 100% 70%;
+  --primary-foreground: 0 0% 0%;
+}
