@@ -33,36 +33,49 @@ router.get("/bills", async (req, res) => {
   }
 });
 
-// POST /payments/pay
+// POST /payments/pay  — payment session creation + processing
 router.post("/pay", async (req, res) => {
   try {
     const { billId, amount, upiId, description } = req.body;
-    
-    // Mark bill as paid if billId provided
-    if (billId) {
-      await db.update(billsTable).set({ isPaid: true }).where(eq(billsTable.id, billId));
+
+    req.log.info({ billId, amount, upiId, description }, "[Payment] Session received");
+
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+      req.log.warn({ amount }, "[Payment] Invalid amount");
+      return res.status(400).json({ error: "Invalid payment amount." });
+    }
+    if (!upiId || typeof upiId !== "string" || !upiId.trim()) {
+      return res.status(400).json({ error: "UPI ID is required." });
     }
 
-    // Create transaction record
+    // Mark bill as paid if billId provided
+    if (billId) {
+      await db.update(billsTable).set({ isPaid: true }).where(eq(billsTable.id, Number(billId)));
+      req.log.info({ billId }, "[Payment] Bill marked paid");
+    }
+
     const transactionId = `TXN${Date.now().toString().slice(-10)}`;
+
     await db.insert(transactionsTable).values({
       userId: DEFAULT_USER_ID,
       type: "payment",
-      amount: amount,
-      recipient: upiId || "Unknown",
+      amount: String(amount),
+      recipient: upiId.trim(),
       status: "success",
       description: description || "Bill payment",
     });
 
+    req.log.info({ transactionId, amount }, "[Payment] Transaction created successfully");
+
     res.json({
       success: true,
       transactionId,
-      amount,
+      amount: Number(amount),
       message: "Payment successful! Your transaction has been processed.",
     });
   } catch (err) {
-    req.log.error({ err }, "Failed to make payment");
-    res.status(500).json({ error: "Payment failed" });
+    req.log.error({ err }, "[Payment] Failed to process payment session");
+    res.status(500).json({ error: "Payment failed. Please try again." });
   }
 });
 
