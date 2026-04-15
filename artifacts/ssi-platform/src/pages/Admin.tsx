@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Users, Activity, Zap, ShieldCheck, TrendingUp, AlertCircle, CheckCircle2, BarChart3 } from "lucide-react";
-import { format } from "date-fns";
+import { Users, Activity, Zap, ShieldCheck, TrendingUp, AlertCircle, CheckCircle2, BarChart3, Fingerprint, RefreshCw, ShieldX } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 interface AdminStats {
   totalUsers: number;
@@ -23,10 +26,56 @@ const statusColor: Record<string, string> = {
   down: "text-red-600 bg-red-50 dark:bg-red-950",
 };
 
+type VC = {
+  credentialId: string;
+  type: string;
+  status: string;
+  issuanceDate: string;
+  credentialSubject: { documentName: string; documentType: string };
+  blockchain: { txHash: string; blockNumber: number; network: string } | null;
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  AadhaarCredential: "Aadhaar Card",
+  PanCardCredential: "PAN Card",
+  DrivingLicenseCredential: "Driving License",
+  PassportCredential: "Passport",
+  VoterIdCredential: "Voter ID",
+  RationCardCredential: "Ration Card",
+  HealthRecordCredential: "Health Record",
+  VerifiableCredential: "Document",
+};
+
 export default function Admin() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: credentials = [], refetch: refetchCreds } = useQuery<VC[]>({
+    queryKey: ["admin-credentials"],
+    queryFn: () => fetch("/api/credentials/1").then((r) => r.json()),
+  });
+
+  const issueMutation = useMutation({
+    mutationFn: () =>
+      fetch("/api/did/create", { method: "POST", headers: { "Content-Type": "application/json" } }).then((r) => r.json()),
+    onSuccess: () => {
+      refetchCreds();
+      toast({ title: "Credentials Issued", description: "All document credentials have been issued and anchored." });
+    },
+    onError: () => toast({ title: "Failed", description: "Could not issue credentials.", variant: "destructive" }),
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: (credentialId: string) =>
+      fetch(`/api/credentials/${credentialId}/revoke`, { method: "POST" }).then((r) => r.json()),
+    onSuccess: () => {
+      refetchCreds();
+      toast({ title: "Revoked", description: "Credential has been revoked from the blockchain." });
+    },
+  });
 
   useEffect(() => {
     fetch("/api/admin/stats")
@@ -194,6 +243,73 @@ export default function Admin() {
               </tbody>
             </table>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-none shadow-md">
+        <CardHeader className="flex flex-row items-start justify-between space-y-0">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Fingerprint className="h-5 w-5 text-primary" />
+              Credential Issuance Panel
+            </CardTitle>
+            <CardDescription>Issue and manage W3C Verifiable Credentials for registered users.</CardDescription>
+          </div>
+          <Button
+            className="gap-2 shrink-0"
+            onClick={() => issueMutation.mutate()}
+            disabled={issueMutation.isPending}
+          >
+            <RefreshCw className={`h-4 w-4 ${issueMutation.isPending ? "animate-spin" : ""}`} />
+            {issueMutation.isPending ? "Issuing..." : "Issue All VCs"}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {credentials.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-xl">
+              <ShieldCheck className="h-10 w-10 mx-auto mb-2 opacity-20" />
+              <p>No credentials issued yet. Click "Issue All VCs" to start.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {credentials.map((vc) => (
+                <div
+                  key={vc.credentialId}
+                  className="flex items-center justify-between p-3 rounded-xl bg-muted/40 gap-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${vc.status === "active" ? "bg-emerald-500" : "bg-red-400"}`} />
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{TYPE_LABELS[vc.type] ?? vc.type}</p>
+                      <p className="text-xs font-mono text-muted-foreground truncate">{vc.credentialId}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {vc.blockchain && (
+                      <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Block #{vc.blockchain.blockNumber.toLocaleString()}
+                      </Badge>
+                    )}
+                    <Badge variant={vc.status === "active" ? "default" : "destructive"} className="text-xs capitalize">
+                      {vc.status}
+                    </Badge>
+                    {vc.status === "active" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 gap-1"
+                        onClick={() => revokeMutation.mutate(vc.credentialId)}
+                        disabled={revokeMutation.isPending}
+                      >
+                        <ShieldX className="h-3.5 w-3.5" /> Revoke
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

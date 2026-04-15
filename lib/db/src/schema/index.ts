@@ -26,3 +26,4 @@ export * from "./healthcare";
 export * from "./payments";
 export * from "./schemes";
 export * from "./notifications";
+export * from "./identity";

@@ -4,6 +4,18 @@
 
 A full-stack, production-quality, AI-powered digital inclusion platform for India — a unified super app for accessing government, financial, healthcare, and identity-based services. Designed for both urban smartphone users and rural kiosk-based users.
 
+### SSI / Blockchain Features (W3C Standards)
+- **Decentralized Identifiers (DIDs)**: `did:ssi:{sha256-32-hex}` format, W3C DID v1.0, stored in `did_documents` table
+- **Verifiable Credentials (VCs)**: W3C VC data model, SHA-256 proofs, EcdsaSecp256k1Signature2019, stored in `verifiable_credentials`
+- **Blockchain Anchoring**: Simulated Polygon Mumbai testnet tx hashes + block numbers in `blockchain_ledger`
+- **IPFS CID simulation**: `bafybei{hex}` format CIDs
+- **Issuer DID**: `did:ssi:govt-india-uidai`
+- **Credential Wallet** (`/credentials`): Browse, share via QR, verify, revoke VCs
+- **Verification Portal** (`/verify`): Public portal — input credential ID, shows full blockchain proof
+- **Admin Panel** (`/admin`): "Issue All VCs" button + per-credential revoke controls
+- **DigiLocker** (`/documents`): Each doc shows "VC Active" badge, block number, Share VC/Verify buttons
+- **Profile** (`/profile`): DID card with live QR code, Copy DID, Show QR dialog
+
 ## Stack
 
 - **Monorepo tool**: pnpm workspaces

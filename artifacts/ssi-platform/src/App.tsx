@@ -23,6 +23,8 @@ import AtmAssistant from "./pages/AtmAssistant";
 import AiAssistant from "./pages/AiAssistant";
 import Admin from "./pages/Admin";
 import Security from "./pages/Security";
+import Credentials from "./pages/Credentials";
+import Verify from "./pages/Verify";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,6 +52,8 @@ function Router() {
         <Route path="/ai-assistant" component={AiAssistant} />
         <Route path="/admin" component={Admin} />
         <Route path="/security" component={Security} />
+        <Route path="/credentials" component={Credentials} />
+        <Route path="/verify" component={Verify} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

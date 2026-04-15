@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useGetUserProfile, useGetActivityLog, useUpdateUserProfile } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -8,12 +9,15 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useKioskMode } from "../contexts/KioskModeContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useHighContrast } from "../contexts/HighContrastContext";
-import { User, Shield, LogOut, Activity, MonitorSmartphone, Users, Plus, Lock, Contrast, Fingerprint } from "lucide-react";
+import { User, Shield, LogOut, Activity, MonitorSmartphone, Users, Plus, Lock, Contrast, Fingerprint, QrCode, Copy } from "lucide-react";
 import { format } from "date-fns";
 import PinAuthModal from "../components/PinAuthModal";
+import QRCode from "react-qr-code";
+import { useToast } from "@/hooks/use-toast";
 
 const FAMILY_MEMBERS = [
   { name: "Priya Kumar", relation: "Spouse", ssiId: "SSI-2024-002", verified: true },
@@ -24,6 +28,7 @@ export default function Profile() {
   const { data: profile, isLoading: profileLoading } = useGetUserProfile();
   const { data: activities, isLoading: activitiesLoading } = useGetActivityLog();
   const updateUser = useUpdateUserProfile();
+  const { toast } = useToast();
 
   const { isKioskMode, setKioskMode } = useKioskMode();
   const { language, setLanguage } = useLanguage();
@@ -31,6 +36,12 @@ export default function Profile() {
   const [pinModalOpen, setPinModalOpen] = useState(false);
   const [pinAction, setPinAction] = useState<"setup" | "verify">("verify");
   const [pinSet, setPinSet] = useState(true);
+  const [didQrOpen, setDidQrOpen] = useState(false);
+
+  const { data: didData } = useQuery<{ did: string; publicKey: string; document: any; createdAt: string }>({
+    queryKey: ["did", "1"],
+    queryFn: () => fetch("/api/did/1").then((r) => r.json()),
+  });
 
   if (profileLoading) {
     return (
@@ -78,6 +89,48 @@ export default function Profile() {
           </div>
         </CardContent>
       </Card>
+
+      {didData && (
+        <Card className="border-none shadow-md bg-gradient-to-br from-slate-900 to-indigo-950 text-white overflow-hidden">
+          <CardContent className="py-6 px-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="space-y-3 flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <Fingerprint className="h-5 w-5 text-indigo-300 shrink-0" />
+                  <span className="text-sm font-semibold text-indigo-200 uppercase tracking-wider">Decentralized Identity (DID)</span>
+                </div>
+                <p className="font-mono text-sm text-white/90 break-all leading-relaxed">{didData.did}</p>
+                <div className="flex flex-wrap gap-2">
+                  <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 border text-xs">W3C DID v1.0</Badge>
+                  <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-500/30 border text-xs">Self-Sovereign</Badge>
+                  <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 border text-xs">Blockchain-Anchored</Badge>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    onClick={() => { navigator.clipboard.writeText(didData.did); toast({ title: "Copied!", description: "DID copied to clipboard" }); }}
+                  >
+                    <Copy className="h-3.5 w-3.5" /> Copy DID
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    onClick={() => setDidQrOpen(true)}
+                  >
+                    <QrCode className="h-3.5 w-3.5" /> Show QR
+                  </Button>
+                </div>
+              </div>
+              <div className="p-3 bg-white rounded-xl shadow-md shrink-0">
+                <QRCode value={didData.did} size={100} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid md:grid-cols-2 gap-6">
         <Card className="border-none shadow-md">
@@ -226,6 +279,27 @@ export default function Profile() {
         }}
         onCancel={() => setPinModalOpen(false)}
       />
+
+      <Dialog open={didQrOpen} onOpenChange={setDidQrOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Your Decentralized Identity</DialogTitle>
+          </DialogHeader>
+          {didData && (
+            <div className="flex flex-col items-center gap-4 py-4">
+              <div className="p-4 bg-white rounded-2xl shadow-inner border">
+                <QRCode value={didData.did} size={180} />
+              </div>
+              <div className="w-full bg-muted/50 rounded-xl p-3">
+                <p className="text-xs text-muted-foreground font-mono break-all text-center">{didData.did}</p>
+              </div>
+              <Button variant="outline" className="w-full gap-2" onClick={() => { navigator.clipboard.writeText(didData.did); toast({ title: "Copied!" }); }}>
+                <Copy className="h-4 w-4" /> Copy DID
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

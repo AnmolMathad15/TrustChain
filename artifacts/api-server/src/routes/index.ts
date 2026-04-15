@@ -12,6 +12,8 @@ import dashboardRouter from "./dashboard";
 import aiRouterHandler from "./ai-router";
 import adminRouter from "./admin";
 import securityRouter from "./security";
+import didRouter from "./did";
+import credentialsRouter from "./credentials";
 
 const router: IRouter = Router();
 
@@ -28,5 +30,7 @@ router.use("/dashboard", dashboardRouter);
 router.use("/ai-router", aiRouterHandler);
 router.use("/admin", adminRouter);
 router.use("/security", securityRouter);
+router.use("/did", didRouter);
+router.use("/credentials", credentialsRouter);
 
 export default router;

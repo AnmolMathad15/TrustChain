@@ -1,0 +1,218 @@
+Upgrade my existing full-stack application into a production-ready Self-Sovereign Identity (SSI) platform with blockchain integration, while preserving all current features and architecture.
+
+## Existing Stack (DO NOT BREAK)
+
+* Frontend: React + Vite + TypeScript
+* Backend: Express + TypeScript
+* Database: PostgreSQL with Drizzle ORM
+* API: REST with React Query hooks
+* Features already built: dashboard, documents, AI assistant, ATM simulator, payments, schemes, notifications, admin panel, security logs
+
+## Core Goal
+
+Transform the current centralized identity system into a decentralized SSI-based system using DID (Decentralized Identifiers), Verifiable Credentials (VCs), and blockchain verification.
+
+---
+
+## PHASE 1: Decentralized Identity (DID)
+
+### Requirements:
+
+* Generate a DID for each user during registration
+* DID format: did:example:<unique-id> (or did:ethr for Ethereum-based)
+* Store DID in database linked to user
+* Create DID Document structure (JSON) including:
+
+  * id (DID)
+  * publicKey
+  * authentication
+* Add API endpoints:
+
+  * POST /api/did/create
+  * GET /api/did/:userId
+
+### Frontend:
+
+* Replace “SSI ID” with DID in profile page
+* Display DID QR code for sharing identity
+
+---
+
+## PHASE 2: Verifiable Credentials (VC)
+
+### Requirements:
+
+* Convert all user documents (Aadhaar, PAN, certificates, health records) into Verifiable Credentials
+
+* VC structure must include:
+
+  * @context
+  * type
+  * issuer
+  * issuanceDate
+  * credentialSubject (user DID + data)
+  * proof (signature)
+
+* Hash each credential using SHA-256
+
+* Store:
+
+  * Full VC in DB/IPFS
+  * Hash on blockchain
+
+### Backend APIs:
+
+* POST /api/credentials/issue
+* GET /api/credentials/:userId
+* POST /api/credentials/verify
+
+### Frontend:
+
+* Update Documents module:
+
+  * Show “Verified Credential” badge
+  * Add “Share via QR” button
+  * Add “Verify” button
+
+---
+
+## PHASE 3: Blockchain Integration
+
+### Use:
+
+* Polygon (preferred) or Ethereum testnet
+* Solidity smart contract
+
+### Smart Contract Features:
+
+* Store DID → hash mapping
+* Store credential hashes
+* Verify credential hash
+
+### Contract functions:
+
+* registerDID(address user, string did)
+* storeCredentialHash(string credentialId, string hash)
+* verifyCredential(string credentialId, string hash) returns (bool)
+
+### Backend:
+
+* Use ethers.js to interact with contract
+* Add service layer for blockchain calls
+
+---
+
+## PHASE 4: Verification System (CRITICAL)
+
+### Flow:
+
+* Generate QR for each credential
+* QR contains credential ID or hash reference
+* Build verification page:
+
+  * Scan QR
+  * Fetch credential
+  * Compare hash with blockchain
+  * Show result:
+
+    * ✅ Valid
+    * ❌ Tampered
+
+### UI:
+
+* Clean verification screen with status indicator
+* Show issuer + timestamp
+
+---
+
+## PHASE 5: Wallet Authentication
+
+### Replace login system with:
+
+* MetaMask / WalletConnect
+
+### Flow:
+
+* User signs message to authenticate
+* Backend verifies signature
+* Map wallet address → user account
+
+### Keep fallback:
+
+* Existing PIN system for demo mode
+
+---
+
+## PHASE 6: IPFS Storage
+
+### Use IPFS for:
+
+* Storing credential JSON securely
+
+### Store:
+
+* IPFS CID in database
+* Only hash on blockchain
+
+---
+
+## PHASE 7: AI Integration (Enhancement)
+
+Extend existing AI system:
+
+* Add fraud detection prompt:
+
+  * Detect suspicious credentials
+* Add “Explain Credential” feature
+* Add identity help assistant:
+
+  * “How to share my credential?”
+  * “Is this document valid?”
+
+---
+
+## PHASE 8: Admin (Issuer Dashboard)
+
+Upgrade admin panel:
+
+* Issue credentials to users
+* View issued credentials
+* Revoke credentials (optional)
+* Analytics:
+
+  * Total credentials issued
+  * Verification count
+
+---
+
+## NON-FUNCTIONAL REQUIREMENTS
+
+* Maintain existing UI/UX (do not break modules)
+* Use modular architecture (services: DID, VC, blockchain)
+* Ensure type safety (TypeScript everywhere)
+* Add loading states and error handling
+* Keep system scalable and production-ready
+
+---
+
+## BONUS (if possible)
+
+* Add credential revocation registry
+* Add multi-chain support abstraction
+* Add role-based access (issuer, holder, verifier)
+
+---
+
+## OUTPUT EXPECTATION
+
+* Clean folder structure
+* Smart contract code
+* Backend services for DID, VC, blockchain
+* Updated frontend components
+* Fully working demo flow:
+  User → gets DID → receives credential → shares → verifier verifies
+
+---
+
+IMPORTANT:
+Do not remove or break existing features. Extend the system cleanly. Ensure backward compatibility and smooth integration with current modules.
