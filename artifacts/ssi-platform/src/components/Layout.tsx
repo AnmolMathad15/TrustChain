@@ -49,7 +49,7 @@ const NavContent = memo(function NavContent({ navItems, location, isKioskMode }:
             <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-slate-900 animate-pulse" />
           </div>
           <div>
-            <h1 className="text-lg font-extrabold leading-none gradient-text">SSI Platform</h1>
+            <h1 className="text-lg font-extrabold leading-none gradient-text">Trustchain</h1>
             <p className="text-[10px] text-slate-400 mt-0.5 font-medium tracking-wider uppercase">Single Smart Interface</p>
           </div>
         </div>
@@ -170,7 +170,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <NavContent navItems={navItems} location={location} isKioskMode={isKioskMode} />
               </SheetContent>
             </Sheet>
-            <span className="text-base font-bold gradient-text">SSI</span>
+            <span className="text-base font-bold gradient-text">Trustchain</span>
           </div>
 
           <div className="ml-auto flex items-center gap-1.5">

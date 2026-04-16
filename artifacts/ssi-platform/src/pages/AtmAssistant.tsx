@@ -9,12 +9,12 @@ import { useMakePayment } from "@workspace/api-client-react";
 type Step = 'INSERT_CARD' | 'PIN' | 'TRANSACTION' | 'AMOUNT' | 'CONFIRM' | 'COMPLETE';
 
 const STEP_VOICE_GUIDE: Record<Step, string> = {
-  INSERT_CARD: "Welcome to SSI ATM Assistant. Please insert your card or tap your phone to begin.",
+  INSERT_CARD: "Welcome to Trustchain ATM. Please insert your card or tap your phone to begin.",
   PIN: "Please enter your 4-digit PIN using the number pad. Your PIN is hidden for security.",
   TRANSACTION: "Please select your transaction type. Options are Cash Withdrawal, Balance Enquiry, Mini Statement, or PIN Change.",
   AMOUNT: "Please enter the amount you wish to withdraw. You can choose from preset amounts or type a custom amount.",
   CONFIRM: "Please review your transaction details and confirm to proceed.",
-  COMPLETE: "Transaction successful! Please collect your cash. Thank you for using SSI Platform.",
+  COMPLETE: "Transaction successful! Please collect your cash. Thank you for using Trustchain.",
 };
 
 export default function AtmAssistant() {
@@ -184,7 +184,7 @@ export default function AtmAssistant() {
               <CheckCircle2 className="w-16 h-16" />
             </div>
             <h2 className="text-3xl font-bold">Please collect your cash</h2>
-            <p className="text-xl text-muted-foreground mb-8">Thank you for using SSI Platform</p>
+            <p className="text-xl text-muted-foreground mb-8">Thank you for using Trustchain</p>
             <Button size="lg" className="h-16 px-12 text-xl" onClick={handleNext}>
               Finish
             </Button>

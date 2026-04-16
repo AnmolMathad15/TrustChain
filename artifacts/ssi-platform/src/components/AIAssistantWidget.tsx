@@ -17,9 +17,9 @@ interface Message {
 }
 
 const GREETINGS: Record<string, string> = {
-  en: "Namaste! I'm your SSI assistant. Ask me to open ATM, pay bills, show documents, check schemes, and more.",
-  hi: "नमस्ते! मैं आपका SSI सहायक हूं। ATM, बिल भुगतान, दस्तावेज़ आदि के लिए पूछें।",
-  kn: "ನಮಸ್ಕಾರ! ನಾನು ನಿಮ್ಮ SSI ಸಹಾಯಕ. ATM, ಬಿಲ್ ಪಾವತಿ, ದಾಖಲೆಗಳು ಇತ್ಯಾದಿ ಕೇಳಿ.",
+  en: "Namaste! I'm your Trustchain assistant. Ask me to open ATM, pay bills, show documents, check schemes, and more.",
+  hi: "नमस्ते! मैं आपका Trustchain सहायक हूं। ATM, बिल भुगतान, दस्तावेज़ आदि के लिए पूछें।",
+  kn: "ನಮಸ್ಕಾರ! ನಾನು ನಿಮ್ಮ Trustchain ಸಹಾಯಕ. ATM, ಬಿಲ್ ಪಾವತಿ, ದಾಖಲೆಗಳು ಇತ್ಯಾದಿ ಕೇಳಿ.",
 };
 
 export default function AIAssistantWidget() {
@@ -164,7 +164,7 @@ export default function AIAssistantWidget() {
                     <Sparkles className="h-4 w-4" />
                   </div>
                   <div>
-                    <span className="font-semibold text-sm">SSI AI Assistant</span>
+                    <span className="font-semibold text-sm">Trustchain AI</span>
                     <div className="flex items-center gap-1 text-xs text-white/70">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
                       Online
