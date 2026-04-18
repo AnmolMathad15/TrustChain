@@ -1,0 +1,511 @@
+You are a senior full-stack Web3 developer. I am building TrustChain-SSSI 
+on Replit — a production-grade SaaS platform for Self-Sovereign Identity 
+(SSI) in India. It is a B2B2C platform with three actor types: Issuers 
+(universities, banks, government), Holders (citizens), and Verifiers 
+(employers, agencies).
+
+## Replit Environment Constraints
+- Single Replit instance (monorepo, not microservices)
+- Use Replit Secrets for all environment variables (not .env files)
+- Database: Replit PostgreSQL (built-in) via Prisma ORM
+- No Docker — use native Node.js process management
+- Single port entry point: Express serves API + Vite frontend via proxy
+- Use Replit Object Storage for file/IPFS simulation in dev
+- Deployable via Replit Deployments (Autoscale)
+- Node.js 20+ runtime
+
+## Project Structure for Replit Monorepo
+
+trustchain-sssi/
+├── client/                          # React + Vite + TypeScript frontend
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── ui/                  # Reusable design system components
+│   │   │   ├── holder/              # Holder portal components
+│   │   │   ├── issuer/              # Issuer portal components
+│   │   │   └── verifier/            # Verifier portal components
+│   │   ├── pages/
+│   │   │   ├── dashboard/
+│   │   │   ├── documents/
+│   │   │   ├── credentials/
+│   │   │   ├── healthcare/
+│   │   │   ├── payments/
+│   │   │   ├── schemes/
+│   │   │   ├── forms/
+│   │   │   ├── issuer/
+│   │   │   └── verifier/
+│   │   ├── hooks/                   # Custom React hooks
+│   │   ├── store/                   # Zustand global state
+│   │   ├── lib/                     # API client, utils, crypto helpers
+│   │   └── types/                   # Shared TypeScript types
+│   ├── index.html
+│   ├── vite.config.ts
+│   └── tailwind.config.ts
+│
+├── server/                          # Node.js + Express + TypeScript backend
+│   ├── src/
+│   │   ├── modules/
+│   │   │   ├── auth/                # DID wallet auth + JWT sessions
+│   │   │   ├── credentials/         # VC issuance, verify, revoke
+│   │   │   ├── blockchain/          # Polygon Web3 integration
+│   │   │   ├── storage/             # IPFS / Replit Object Storage
+│   │   │   ├── notifications/       # WebSocket + alerts
+│   │   │   ├── schemes/             # Government schemes matching
+│   │   │   ├── payments/            # UPI/bill management
+│   │   │   ├── healthcare/          # ABHA health records
+│   │   │   ├── documents/           # DigiLocker integration
+│   │   │   └── admin/               # Admin panel APIs
+│   │   ├── middleware/
+│   │   │   ├── auth.middleware.ts   # JWT + DID verification
+│   │   │   ├── rbac.middleware.ts   # Role-based access control
+│   │   │   ├── rateLimit.middleware.ts
+│   │   │   └── validate.middleware.ts # Zod validation
+│   │   ├── lib/
+│   │   │   ├── prisma.ts            # Prisma client singleton
+│   │   │   ├── crypto.ts            # Ed25519, AES-256 helpers
+│   │   │   ├── did.ts               # DID generation & resolution
+│   │   │   ├── polygon.ts           # Web3.js / ethers.js Polygon client
+│   │   │   └── websocket.ts         # WebSocket server
+│   │   ├── routes/
+│   │   │   └── index.ts             # All route registrations
+│   │   └── index.ts                 # Express app entry point
+│   └── tsconfig.json
+│
+├── contracts/                       # Solidity smart contracts
+│   ├── TrustRegistry.sol            # Whitelisted issuers
+│   ├── CredentialAnchor.sol         # Hash anchoring on Polygon
+│   ├── RevocationRegistry.sol       # Credential revocation
+│   └── scripts/
+│       ├── deploy.ts                # Hardhat deploy scripts
+│       └── verify.ts
+│
+├── prisma/
+│   ├── schema.prisma                # Full database schema
+│   └── migrations/
+│
+├── shared/                          # Shared types between client + server
+│   └── types/
+│       ├── credential.types.ts
+│       ├── did.types.ts
+│       └── user.types.ts
+│
+├── .replit                          # Replit run config
+├── replit.nix                       # Nix packages config
+├── package.json                     # Root package.json (workspaces)
+└── README.md
+
+## Replit Config Files
+
+### .replit
+\`\`\`toml
+run = "npm run dev"
+entrypoint = "server/src/index.ts"
+
+[nix]
+channel = "stable-23_11"
+
+[deployment]
+run = ["sh", "-c", "npm run build && npm run start"]
+deploymentTarget = "autoscale"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+\`\`\`
+
+### replit.nix
+\`\`\`nix
+{ pkgs }: {
+  deps = [
+    pkgs.nodejs_20
+    pkgs.nodePackages.typescript
+    pkgs.nodePackages.ts-node
+    pkgs.openssl
+  ];
+}
+\`\`\`
+
+### Root package.json (workspaces)
+\`\`\`json
+{
+  "name": "trustchain-sssi",
+  "private": true,
+  "workspaces": ["client", "server", "shared"],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && npx ts-node-dev src/index.ts",
+    "dev:client": "cd client && npx vite --port 5173",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "cd client && npx vite build",
+    "build:server": "cd server && npx tsc",
+    "start": "node server/dist/index.js",
+    "db:push": "npx prisma db push",
+    "db:studio": "npx prisma studio"
+  }
+}
+\`\`\`
+
+## Full Prisma Schema
+
+\`\`\`prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  ISSUER
+  HOLDER
+  VERIFIER
+}
+
+enum CredentialStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+  PENDING
+}
+
+model User {
+  id            String    @id @default(cuid())
+  did           String    @unique
+  email         String?   @unique
+  phone         String?   @unique
+  name          String?
+  role          Role      @default(HOLDER)
+  walletAddress String?   @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile       Profile?
+  credentials   Credential[]  @relation("HolderCredentials")
+  issuedCreds   Credential[]  @relation("IssuerCredentials")
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  sessions      Session[]
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  aadhaarHash String?
+  abhaId      String?
+  photo       String?
+  dob         DateTime?
+  gender      String?
+  address     Json?
+}
+
+model DIDDocument {
+  id            String   @id @default(cuid())
+  did           String   @unique
+  document      Json
+  publicKey     String
+  keyType       String   @default("Ed25519")
+  polygonTxHash String?
+  createdAt     DateTime @default(now())
+}
+
+model Credential {
+  id              String           @id @default(cuid())
+  vcId            String           @unique
+  holderId        String
+  holder          User             @relation("HolderCredentials", fields: [holderId], references: [id])
+  issuerId        String
+  issuer          User             @relation("IssuerCredentials", fields: [issuerId], references: [id])
+  type            String
+  subjectData     Json
+  credentialHash  String           @unique
+  ipfsCid         String?
+  polygonTxHash   String?
+  blockNumber     Int?
+  status          CredentialStatus @default(ACTIVE)
+  issuedAt        DateTime         @default(now())
+  expiresAt       DateTime?
+  revokedAt       DateTime?
+  revokeReason    String?
+  signature       String
+  proofType       String           @default("Ed25519Signature2020")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  verifications   VerificationLog[]
+}
+
+model TrustedIssuer {
+  id              String   @id @default(cuid())
+  did             String   @unique
+  orgName         String
+  orgType         String
+  walletAddress   String   @unique
+  reputationScore Int      @default(100)
+  isApproved      Boolean  @default(false)
+  approvedAt      DateTime?
+  polygonTxHash   String?
+  createdAt       DateTime @default(now())
+}
+
+model VerificationLog {
+  id             String     @id @default(cuid())
+  credentialId   String
+  credential     Credential @relation(fields: [credentialId], references: [id])
+  verifierDid    String
+  verifierOrg    String?
+  result         Boolean
+  failureReason  String?
+  verifiedAt     DateTime   @default(now())
+  ipAddress      String?
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  txHash    String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  type      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model ApiKey {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  orgName     String
+  verifierDid String
+  tier        String   @default("starter")
+  usageCount  Int      @default(0)
+  monthlyLimit Int     @default(500)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+\`\`\`
+
+## Replit Secrets Required (set in Replit Secrets tab)
+\`\`\`
+DATABASE_URL=           # Replit PostgreSQL connection string
+JWT_SECRET=             # Random 64 char string
+ENCRYPTION_KEY=         # AES-256 key (32 bytes hex)
+POLYGON_RPC_URL=        # https://rpc-mumbai.maticvigil.com
+POLYGON_PRIVATE_KEY=    # Deployer wallet private key
+CONTRACT_CREDENTIAL_ANCHOR=  # Deployed contract address
+CONTRACT_REVOCATION=         # Deployed contract address
+CONTRACT_TRUST_REGISTRY=     # Deployed contract address
+WEB3_STORAGE_TOKEN=     # web3.storage API token (for IPFS)
+ANTHROPIC_API_KEY=      # Claude API for AI Assistant feature
+DIGILOCKER_CLIENT_ID=   # DigiLocker sandbox credentials
+DIGILOCKER_CLIENT_SECRET=
+ABHA_CLIENT_ID=         # ABHA sandbox credentials
+ABHA_CLIENT_SECRET=
+STRIPE_SECRET_KEY=      # Stripe for SaaS billing
+STRIPE_WEBHOOK_SECRET=
+\`\`\`
+
+## Core Backend Modules to Build
+
+### 1. DID Generation (server/src/lib/did.ts)
+- Generate W3C DID Document: did:polygon:<walletAddress>
+- Ed25519 keypair generation using @noble/ed25519
+- Store DID document in PostgreSQL + anchor hash on Polygon
+- DID resolution endpoint: GET /api/did/:did
+
+### 2. VC Issuance Engine (server/src/modules/credentials/)
+- Issue JWT-VC signed with Ed25519
+- Store encrypted credential on IPFS (Web3.storage)
+- Anchor credential hash on Polygon via CredentialAnchor contract
+- Return VC to holder wallet
+- Endpoints:
+  POST /api/credentials/issue
+  GET  /api/credentials/:id
+  POST /api/credentials/verify
+  POST /api/credentials/revoke/:id
+  GET  /api/credentials/holder/:did
+
+### 3. Smart Contracts (contracts/)
+\`\`\`solidity
+// CredentialAnchor.sol
+// anchorCredential(bytes32 credHash, string did, string vcId)
+// isAnchored(bytes32 credHash) returns (bool)
+// getAnchor(bytes32 credHash) returns (Anchor memory)
+
+// RevocationRegistry.sol  
+// revokeCredential(bytes32 credHash, string reason)
+// isRevoked(bytes32 credHash) returns (bool)
+
+// TrustRegistry.sol
+// addIssuer(address issuer, string did, string orgName)
+// isTrustedIssuer(address issuer) returns (bool)
+// getIssuerScore(address issuer) returns (uint256)
+\`\`\`
+
+### 4. Blockchain Service (server/src/lib/polygon.ts)
+- ethers.js v6 Polygon Mumbai/Mainnet client
+- Contract interaction wrappers for all 3 contracts
+- Transaction receipt polling with retry logic
+- Gas estimation before sending
+
+### 5. Auth Module (server/src/modules/auth/)
+- Two auth methods:
+  a) MetaMask signature verification (Web3 wallet auth)
+  b) Phone OTP fallback (for non-crypto users)
+- JWT session after auth
+- RBAC middleware checking User.role
+
+### 6. WebSocket Server (server/src/lib/websocket.ts)
+- ws library (compatible with Replit)
+- Rooms per userId for targeted notifications
+- Events: credential_issued, verification_request, 
+  payment_due, scheme_matched
+
+## Frontend Upgrades (React + Vite + TypeScript)
+
+### Design System Improvements
+- Keep current dark theme (#0d0d1a background)
+- Upgrade credential cards to glassmorphism:
+  background: rgba(255,255,255,0.05)
+  backdrop-filter: blur(12px)
+  border: 1px solid rgba(255,255,255,0.1)
+- Add Framer Motion to all page transitions
+- Skeleton loaders for every async component
+- react-hot-toast for all action feedback
+- Inter font for UI, JetBrains Mono for DID/hash/tx strings
+- Consistent badge system:
+  green = verified/active
+  orange = pending
+  red = revoked/overdue
+  blue = processing
+
+### New Pages to Add
+1. /onboarding — wallet connect → DID create → first credential wizard
+2. /issuer — Issuer Portal (separate layout)
+3. /verifier — Verifier Portal with QR scanner
+4. /credentials/:id — Credential detail with Polygonscan link
+5. /landing — SaaS marketing homepage with pricing
+
+### Key Components to Build
+- <WalletConnect /> — MetaMask connect button + DID display
+- <CredentialCard /> — glassmorphism card with QR share button
+- <QRScanner /> — webcam-based QR credential verifier
+- <BlockchainBadge txHash={...} /> — clickable Polygonscan link
+- <DidDisplay did={...} /> — truncated DID with copy button
+- <SchemeEligibilityChecker /> — AI-powered scheme matching
+- <NotificationPanel /> — WebSocket real-time alerts
+- <AuditTimeline /> — credential lifecycle activity feed
+
+### State Management
+- Zustand stores:
+  useAuthStore — user, did, role, wallet
+  useCredentialStore — credentials, loading states
+  useNotificationStore — notifications, unread count
+- TanStack Query for all API calls with proper cache keys
+
+## SaaS Features for Replit Deployment
+
+### Subscription Tiers (Stripe)
+\`\`\`
+Free tier:
+- 1 DID
+- 10 credentials/month
+- Basic verification
+
+Starter (₹999/month):
+- 1 DID
+- 500 credentials/month
+- API access (500 calls/month)
+- Webhook support
+
+Enterprise (₹4999/month):
+- Unlimited DIDs
+- Unlimited credentials
+- Unlimited API
+- Priority support
+- Custom issuer branding
+\`\`\`
+
+### Admin Dashboard (/admin)
+- User management table with role assignment
+- Issuer approval queue (approve/reject trusted issuers)
+- System stats: total DIDs, credentials issued, verifications today
+- API key management
+- Revenue overview (Stripe integration)
+
+## AI Assistant Upgrade (Claude API)
+Connect existing AI Assistant UI to Claude API:
+
+\`\`\`typescript
+// POST /api/ai/explain-credential
+// POST /api/ai/check-scheme-eligibility  
+// POST /api/ai/detect-anomaly
+// POST /api/ai/atm-guide (voice-friendly responses)
+
+System prompt for credential explanation:
+"You are TrustChain AI, an assistant helping Indian citizens 
+understand their digital credentials and government schemes. 
+Explain in simple English and Hindi mixed language (Hinglish) 
+when appropriate. Be concise, friendly, and accurate."
+\`\`\`
+
+## Build Order for Replit (Step by Step)
+
+Step 1: Set up monorepo structure + Prisma schema + DB
+Step 2: Build auth module (wallet + OTP)
+Step 3: Build DID generation engine
+Step 4: Deploy smart contracts to Polygon Mumbai testnet
+Step 5: Build VC issuance + verification engine
+Step 6: Build WebSocket notification system
+Step 7: Upgrade frontend design system (glassmorphism + animations)
+Step 8: Build Issuer Portal + Verifier Portal
+Step 9: Integrate DigiLocker + ABHA APIs
+Step 10: Add AI Assistant (Claude API)
+Step 11: Add Stripe subscription system
+Step 12: Build admin dashboard
+Step 13: Deploy on Replit Autoscale
+
+## Code Standards
+- TypeScript strict mode: true everywhere
+- Zod validation on all API inputs
+- TanStack Query for all client server-state
+- Zustand for all client global-state
+- All async functions must have try/catch
+- All Polygon transactions must have receipt confirmation
+- Credentials must NEVER be stored in plain text anywhere
+- Prisma transactions for multi-table writes
+
+## Output Format
+When I ask you to build a specific step or module, always give:
+1. Exact file paths for every file
+2. Complete working code (no placeholders)
+3. Required npm packages to install
+4. Any Replit Secrets needed for that module
+5. How to test it on Replit
+
+I will now tell you which step to start with. 
+Begin by confirming you understand the full architecture 
+and list any clarifying questions before we start Step 1.
