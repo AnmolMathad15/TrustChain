@@ -1,0 +1,638 @@
+You are a senior React engineer. Rebuild the Healthcare/ABHA section 
+of TrustChain-SSSI from scratch. The current page is completely static 
+— flat list, raw timestamps, no interactivity, no insights. 
+
+Replace it with a fully dynamic, interactive healthcare dashboard.
+
+## Stack
+- React + Vite + TypeScript
+- Tailwind CSS
+- Framer Motion (already installed)
+- TanStack Query for data fetching
+- Zustand for state
+- react-hot-toast for notifications
+- lucide-react for icons
+
+## File Structure to Create
+
+src/pages/healthcare/
+├── HealthcarePage.tsx          ← main page component
+├── index.ts                    ← export barrel
+
+src/components/healthcare/
+├── AbhaProfileCard.tsx         ← ABHA ID + vitals card
+├── VitalBox.tsx                ← individual vital metric
+├── BpTrendCard.tsx             ← blood pressure sparkline card
+├── MedicationsCard.tsx         ← active meds + refill countdown
+├── AppointmentsList.tsx        ← upcoming appointments
+├── MedicalRecordCard.tsx       ← expandable record card
+├── RecordFilterTabs.tsx        ← All/Rx/Lab/Consultation tabs
+├── ShareRecordsModal.tsx       ← VC share options modal
+├── RecordExpandPanel.tsx       ← expanded record detail panel
+├── HealthAiExplainer.tsx       ← AI explain button + logic
+└── index.ts                    ← export barrel
+
+src/hooks/healthcare/
+├── useHealthRecords.ts         ← TanStack Query fetch hook
+├── useAbhaProfile.ts           ← ABHA profile data hook
+├── useAppointments.ts          ← appointments fetch hook
+└── useMedications.ts           ← active medications hook
+
+src/types/healthcare.ts         ← all TypeScript interfaces
+
+src/store/healthcareStore.ts    ← Zustand store
+
+---
+
+## TypeScript Interfaces (src/types/healthcare.ts)
+
+\`\`\`typescript
+export type RecordType = 
+  'prescription' | 'lab_report' | 'consultation' | 
+  'radiology' | 'vaccination' | 'discharge_summary'
+
+export type VitalStatus = 'normal' | 'monitor' | 'critical'
+
+export interface AbhaProfile {
+  abhaId: string
+  name: string
+  dob: string
+  gender: string
+  bloodGroup: string
+  height: number        // cm
+  weight: number        // kg
+  bmi: number
+  vitalsStatus: VitalStatus
+  lastCheckup: string   // ISO date
+  hospital: string
+}
+
+export interface VitalReading {
+  date: string          // ISO date
+  systolic: number
+  diastolic: number
+  heartRate: number
+  spo2: number
+  temperature: number
+}
+
+export interface Medication {
+  id: string
+  name: string
+  dosage: string
+  frequency: string
+  startDate: string
+  refillDate: string    // ISO date — compute days remaining
+  prescribedBy: string
+  condition: string
+}
+
+export interface Appointment {
+  id: string
+  title: string
+  doctor: string
+  hospital: string
+  date: string          // ISO date
+  time: string
+  type: 'followup' | 'test' | 'procedure' | 'consultation'
+  notes?: string
+}
+
+export interface MedicalRecord {
+  id: string
+  title: string
+  type: RecordType
+  doctor: string
+  hospital: string
+  date: string          // ISO date
+  vcAnchored: boolean
+  blockchainTxHash?: string
+  blockNumber?: number
+  summary?: string      // AI-generated or manual
+  details?: string      // expanded content
+  tags?: string[]
+}
+
+export type RecordFilter = 
+  'all' | 'prescription' | 'lab_report' | 'consultation' | 'radiology'
+\`\`\`
+
+---
+
+## Zustand Store (src/store/healthcareStore.ts)
+
+\`\`\`typescript
+import { create } from 'zustand'
+import { RecordFilter, MedicalRecord } from '../types/healthcare'
+
+interface HealthcareStore {
+  activeFilter: RecordFilter
+  expandedRecordId: string | null
+  isShareModalOpen: boolean
+  aiExplainingId: string | null
+
+  setFilter: (f: RecordFilter) => void
+  toggleRecord: (id: string) => void
+  openShareModal: () => void
+  closeShareModal: () => void
+  setAiExplaining: (id: string | null) => void
+}
+
+export const useHealthcareStore = create<HealthcareStore>((set) => ({
+  activeFilter: 'all',
+  expandedRecordId: null,
+  isShareModalOpen: false,
+  aiExplainingId: null,
+
+  setFilter: (activeFilter) => set({ activeFilter }),
+  toggleRecord: (id) => set((s) => ({
+    expandedRecordId: s.expandedRecordId === id ? null : id
+  })),
+  openShareModal: () => set({ isShareModalOpen: true }),
+  closeShareModal: () => set({ isShareModalOpen: false }),
+  setAiExplaining: (aiExplainingId) => set({ aiExplainingId }),
+}))
+\`\`\`
+
+---
+
+## Mock Data (src/lib/healthcareMockData.ts)
+
+Create realistic mock data matching these interfaces:
+
+AbhaProfile:
+- abhaId: "12-3456-7890-1234"
+- name: "Rahul Kumar"
+- bloodGroup: "B+"
+- height: 172
+- weight: 68
+- bmi: 23.0 (computed)
+- vitalsStatus: "normal"
+- lastCheckup: "2024-01-15"
+- hospital: "Apollo Hospital Bangalore"
+
+VitalReadings (last 6 readings for sparkline):
+- Dates: Jan 10, 12, 14, 16, 18, 20
+- Systolic range: 122-132
+- Diastolic range: 80-88
+
+Medications (2 active):
+- Amlodipine 5mg - once daily - refill in 4 days
+- Metformin 500mg - twice daily - refill in 18 days
+
+Appointments (2 upcoming):
+- Apr 22: Cardiology Follow-up, Dr. Priya Sharma, 10:30 AM
+- May 5: Blood Sugar Test HbA1c, Apollo Diagnostics, Fasting required
+
+MedicalRecords (4 records):
+1. Hypertension Medication - prescription - Jan 16
+2. Annual Health Checkup - consultation - Jan 15
+3. Complete Blood Count CBC - lab_report - Jan 15
+4. Chest X-Ray - radiology - Jan 15
+All with vcAnchored: true and fake Polygon tx hashes
+
+---
+
+## Component Specifications
+
+### HealthcarePage.tsx (main page)
+\`\`\`
+Layout:
+┌─────────────────────────────────────────────────┐
+│ [♥ icon] ABHA Health ID          [Share] [Sync] │
+│ Manage your health records · Last synced 2h ago │
+├─────────────────────────────────────────────────┤
+│ AbhaProfileCard (full width)                    │
+├─────────────────────────────────────────────────┤
+│ BpTrendCard (50%)  │  MedicationsCard (50%)     │
+├─────────────────────────────────────────────────┤
+│ AppointmentsList (full width)                   │
+├─────────────────────────────────────────────────┤
+│ Medical Records                   [4 · VC ✓]   │
+│ RecordFilterTabs                                │
+│ MedicalRecordCard × n                           │
+└─────────────────────────────────────────────────┘
+
+- Wrap entire page in Framer Motion pageVariants
+- Section accent color: #DC2626 (red) for healthcare
+- Page header icon bg: rgba(220,38,38,0.12)
+- Header sync button: red accent style
+\`\`\`
+
+### AbhaProfileCard.tsx
+\`\`\`
+Layout: horizontal flex
+Left: Avatar circle (red bg, white heart icon, 44px)
+      Name (16px bold)
+      "ABHA Health Account · Hospital"
+      ABHA ID in monospace pill (red tint)
+
+Right: 4-column vitals grid
+  [Blood Group] [Height] [Weight + BMI bar] [Vitals status]
+
+Card style:
+  background: var(--bg-elevated) or glass-card
+  border-top: 3px solid #DC2626
+  border-radius: 16px
+  padding: 1.25rem
+
+BMI bar:
+  Show colored progress bar under weight
+  Green if BMI 18.5-24.9, amber if 25-29.9, red if 30+
+  Small dot indicator at current BMI position
+  Show BMI value below bar
+
+VitalBox per vital:
+  Muted label (11px)
+  Large value (20px bold) with unit
+  Status tag/badge below
+  Blood group: red tag
+  Normal values: green tag
+  Watch values: amber tag
+
+Framer Motion: 
+  Card fades in + slides up on mount
+  Vitals stagger in with 0.1s delay each
+\`\`\`
+
+### BpTrendCard.tsx
+\`\`\`
+Glass card, red accent top border
+
+Header:
+  Red dot + "Blood pressure trend"
+  Latest reading large: "128/84 mmHg"
+  Sub: "Last reading · 3 days ago"
+  Status badge: amber "Monitor" or green "Normal"
+
+Sparkline chart (use recharts AreaChart, no axes, no grid):
+  6 data points of systolic values
+  Red fill area (#DC2626 at 20% opacity)
+  Red stroke line
+  Tiny and compact: height 60px, no padding
+  Tooltip on hover showing date + reading
+
+Footer: 
+  "View full history" text link
+\`\`\`
+
+### MedicationsCard.tsx
+\`\`\`
+Glass card, red accent top border
+
+Header: "Active medications" + count badge
+
+Each medication row:
+  Pill icon (colored circle)
+  Name + dosage + frequency
+  Progress bar showing days until refill
+    - Green if >14 days
+    - Amber if 7-14 days
+    - Red if <7 days
+  "Refill in X days" label in matching color
+
+Footer:
+  "Ask AI about interactions" button 
+  → calls sendPrompt or navigates to AI assistant with 
+    pre-filled context about current medications
+\`\`\`
+
+### AppointmentsList.tsx
+\`\`\`
+Section header: "Upcoming appointments" + "Next 30 days"
+
+Each appointment card:
+  Left border: 3px amber (#D97706)
+  Date pill (amber bg): "Apr 22"
+  Title (13px bold)
+  Doctor + hospital + time (12px muted)
+  Right: "Reschedule" ghost button
+
+Empty state if no appointments:
+  Muted text "No upcoming appointments"
+  "Book appointment" button
+
+Framer Motion: stagger in with 0.08s delay
+\`\`\`
+
+### MedicalRecordCard.tsx
+\`\`\`
+Props:
+  record: MedicalRecord
+  isExpanded: boolean
+  onToggle: () => void
+
+Collapsed state:
+  Flex row layout
+  Left: type icon in colored circle
+    prescription → red bg, pill icon
+    lab_report → blue bg, flask icon  
+    consultation → green bg, stethoscope icon
+    radiology → amber bg, scan icon
+  Middle:
+    Title (14px bold)
+    Doctor · Hospital (12px muted)
+    Tags row: type badge + "VC Anchored" badge (green)
+  Right:
+    Date (12px monospace)
+    Action buttons: [View] [Explain]
+  
+  Hover: border brightens, subtle lift
+
+Expanded state (AnimatePresence height animation):
+  Additional panel slides down below the row
+  Background: slightly different from card bg
+  Content: record.details or summary
+  If vcAnchored: show tx hash with Polygonscan link
+    "✓ Block #45,156,205 · 0x7f3a...b9c2"
+    Monospace font, cyan/green color, external link icon
+
+VC Anchored badge:
+  Green bg, green border
+  Small chain-link icon
+  "VC Anchored" text
+
+Explain button behavior:
+  Shows loading spinner while AI responds
+  Uses useHealthcareStore aiExplainingId to track
+  Calls POST /api/ai/explain-credential with record data
+  On response: expand panel with AI explanation
+  On error: toast error message
+\`\`\`
+
+### RecordFilterTabs.tsx
+\`\`\`
+Pill-style tab group:
+  Tabs: All | Prescriptions | Lab reports | 
+        Consultations | Radiology
+
+Active tab:
+  White bg (dark mode: slightly lighter surface)
+  Border: 0.5px
+  Font weight: 500
+  Transition: background slides via layoutId (Framer Motion)
+
+Show count badge on each tab:
+  "All (4)" "Prescriptions (1)" etc.
+
+Filter logic:
+  Controlled by useHealthcareStore activeFilter
+  Filter applied in HealthcarePage before rendering records
+\`\`\`
+
+### ShareRecordsModal.tsx
+\`\`\`
+Trigger: "Share Records" button in page header
+
+Modal style:
+  Slides down from top of ABHA card area (NOT fixed position)
+  Animated with AnimatePresence + height
+  Glass card with red top border
+
+Title: "Share health records as verified credential"
+Subtitle: "Choose how to share your ABHA data securely"
+
+3 share options (each a clickable row):
+  1. VC Link
+     Icon: link icon in blue circle
+     Title: "Share via VC Link"
+     Sub: "Generate a time-limited verifiable credential link"
+     Action: copy link to clipboard + toast "Link copied"
+
+  2. QR Code
+     Icon: QR icon in purple circle
+     Title: "Share via QR Code"
+     Sub: "Doctor or hospital scans to verify instantly"
+     Action: open QR modal or generate QR
+
+  3. Hospital Direct
+     Icon: building icon in green circle
+     Title: "Share with hospital"
+     Sub: "Send directly to registered ABDM provider"
+     Action: open hospital selector
+
+Close: X button top right OR click outside
+
+Each option row hover: background tint matching icon color
+\`\`\`
+
+### HealthAiExplainer.tsx (reusable)
+\`\`\`
+Props:
+  recordId: string
+  recordTitle: string
+  recordDetails: string
+  recordType: RecordType
+
+Button states:
+  Default: "Explain" with sparkle icon (amber/orange style)
+  Loading: spinner + "Explaining..."
+  Done: "Explained ✓" (briefly, then resets)
+
+On click:
+  1. Set aiExplainingId in store
+  2. Call POST /api/ai/explain-credential
+     Body: { title, type, details, doctor, date }
+  3. On success: 
+     - Update record in local state with aiExplanation
+     - Expand the record card
+     - Show explanation in expand panel
+     - Toast: "AI explanation ready"
+  4. On error:
+     - Toast: "AI explanation failed, try again"
+  5. Reset aiExplainingId
+
+API endpoint to create (server/src/modules/ai/):
+  POST /api/ai/explain-credential
+  Body: { title: string, type: string, details: string, 
+          doctor: string, date: string }
+  
+  System prompt for Claude API:
+  "You are TrustChain Health AI. Explain medical records to 
+  Indian patients in simple, friendly language. Mix English 
+  with simple Hindi words naturally (Hinglish) where it helps. 
+  Keep explanations under 100 words. Be reassuring but accurate. 
+  Never diagnose. Always suggest consulting the doctor."
+  
+  User prompt:
+  "Explain this health record to the patient: 
+   Title: {title}
+   Type: {type}
+   Doctor: {doctor}
+   Date: {date}
+   Details: {details}"
+  
+  Return: { explanation: string }
+\`\`\`
+
+---
+
+## TanStack Query Hooks
+
+### useHealthRecords.ts
+\`\`\`typescript
+// GET /api/health/records
+// Returns MedicalRecord[]
+// staleTime: 5 * 60 * 1000 (5 mins)
+// In dev: return mock data directly
+// Show skeleton loaders while loading
+\`\`\`
+
+### useAbhaProfile.ts
+\`\`\`typescript
+// GET /api/health/profile
+// Returns AbhaProfile
+// staleTime: 10 * 60 * 1000 (10 mins)
+// In dev: return mock profile
+\`\`\`
+
+### useAppointments.ts
+\`\`\`typescript
+// GET /api/health/appointments
+// Returns Appointment[]
+// staleTime: 5 * 60 * 1000
+// Sort by date ascending
+// Filter: only future dates
+\`\`\`
+
+### useMedications.ts
+\`\`\`typescript
+// GET /api/health/medications
+// Returns Medication[]
+// Compute daysUntilRefill from refillDate
+// Sort: soonest refill first
+\`\`\`
+
+---
+
+## Animation Specifications (Framer Motion)
+
+### Page entry
+\`\`\`typescript
+const pageVariants = {
+  initial: { opacity: 0, y: 16 },
+  animate: { 
+    opacity: 1, y: 0,
+    transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }
+  }
+}
+\`\`\`
+
+### Card stagger container
+\`\`\`typescript
+const containerVariants = {
+  animate: {
+    transition: { staggerChildren: 0.08, delayChildren: 0.1 }
+  }
+}
+const itemVariants = {
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.25 } }
+}
+\`\`\`
+
+### Record expand panel (AnimatePresence)
+\`\`\`typescript
+<AnimatePresence>
+  {isExpanded && (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: 'auto', opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      transition={{ duration: 0.25, ease: 'easeInOut' }}
+      style={{ overflow: 'hidden' }}
+    >
+      <RecordExpandPanel record={record} />
+    </motion.div>
+  )}
+</AnimatePresence>
+\`\`\`
+
+### Share modal slide down
+\`\`\`typescript
+initial: { height: 0, opacity: 0 }
+animate: { height: 'auto', opacity: 1 }
+exit: { height: 0, opacity: 0 }
+transition: { duration: 0.2 }
+\`\`\`
+
+### Vitals stagger (AbhaProfileCard)
+\`\`\`typescript
+// Each VitalBox:
+initial: { opacity: 0, scale: 0.95 }
+animate: { opacity: 1, scale: 1 }
+transition: { delay: index * 0.08, duration: 0.2 }
+\`\`\`
+
+---
+
+## Skeleton Loaders
+
+Create HealthcareSkeleton.tsx:
+\`\`\`
+- AbhaProfileCard skeleton: 
+    Rectangular block 120px tall, full width
+- InsightsRow skeleton:
+    Two blocks 100px tall, 50% width each
+- RecordCard skeleton:
+    3 rows, each 70px tall
+    Shimmer animation on all
+
+Shimmer CSS:
+background: linear-gradient(
+  90deg,
+  var(--bg-elevated) 25%,
+  var(--bg-overlay) 50%, 
+  var(--bg-elevated) 75%
+);
+background-size: 200% 100%;
+animation: shimmer 1.5s infinite linear;
+\`\`\`
+
+---
+
+## Tailwind Classes Reference (use these consistently)
+
+Section accent color token (add to tailwind.config.ts):
+\`\`\`
+healthcare: {
+  DEFAULT: '#DC2626',
+  light: 'rgba(220,38,38,0.12)',
+  border: 'rgba(220,38,38,0.3)',
+}
+\`\`\`
+
+Common class patterns:
+- Glass card: "bg-white/5 backdrop-blur-md border border-white/8 rounded-2xl"
+- Red accent card: "border-t-2 border-t-red-600"
+- VC badge: "bg-green-500/15 text-green-400 border border-green-500/30 
+             text-xs px-2 py-0.5 rounded-full"
+- Prescription badge: "bg-red-500/15 text-red-400 border border-red-500/30 
+                       text-xs px-2 py-0.5 rounded-full"
+- Lab badge: "bg-blue-500/15 text-blue-400 border border-blue-500/30 
+              text-xs px-2 py-0.5 rounded-full"
+- Monospace text: "font-mono text-xs text-slate-400"
+- Polygonscan link: "font-mono text-xs text-cyan-400 hover:text-cyan-300 
+                     underline cursor-pointer"
+
+---
+
+## Backend Endpoints Needed (Express)
+
+Create server/src/modules/health/health.router.ts:
+
+\`\`\`
+GET  /api/health/profile        → AbhaProfile (mock in dev)
+GET  /api/health/records        → MedicalRecord[]
+GET  /api/health/records/:id    → MedicalRecord
+GET  /api/health/appointments   → Appointment[]
+GET  /api/health/medications    → Medication[]
+GET  /api/health/vitals         → VitalReading[] (last 30 days)
+POST /api/health/sync           → trigger ABHA API sync
+POST /api/ai/explain-credential → AI explanation via Claude API
+\`\`\`
+
+For POST /api/ai/explain-credential:
+\`\`\`typescript
+// Use ANTHROPIC_API_KEY from Replit Secrets
+// Model: claude-sonnet-4-20

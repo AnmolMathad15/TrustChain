@@ -10,6 +10,7 @@ import schemesRouter from "./schemes";
 import notificationsRouter from "./notifications";
 import dashboardRouter from "./dashboard";
 import aiRouterHandler from "./ai-router";
+import aiHealthRouter from "./ai-health";
 import adminRouter from "./admin";
 import securityRouter from "./security";
 import didRouter from "./did";
@@ -21,6 +22,7 @@ const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use("/openai", openaiRouter);
+router.use("/ai", aiHealthRouter);
 router.use("/users", usersRouter);
 router.use("/documents", documentsRouter);
 router.use("/forms", formsRouter);

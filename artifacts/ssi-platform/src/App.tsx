@@ -14,7 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import Documents from "./pages/Documents";
 import FormsList from "./pages/FormsList";
 import FormDetail from "./pages/FormDetail";
-import Healthcare from "./pages/Healthcare";
+import Healthcare from "./pages/healthcare";
 import Payments from "./pages/Payments";
 import Schemes from "./pages/Schemes";
 import Notifications from "./pages/Notifications";
