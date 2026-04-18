@@ -4,6 +4,7 @@ import {
   Home, CreditCard, FileText, FileEdit, Heart, Wallet,
   Umbrella, Bell, User, Bot, Menu, Moon, ShieldCheck,
   ScanSearch, Sun, Shield, LayoutDashboard, Contrast, Zap,
+  Building2, ScanLine, Rocket,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -138,10 +139,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/notifications", icon: Bell, label: t("nav.notifications"), badge: unreadCount },
     { href: "/credentials", icon: ShieldCheck, label: "Credentials" },
     { href: "/verify", icon: ScanSearch, label: "Verify VC" },
+    { href: "/issuer", icon: Building2, label: "Issuer Portal" },
+    { href: "/verifier", icon: ScanLine, label: "Verifier Portal" },
     { href: "/security", icon: Shield, label: "Security" },
     { href: "/profile", icon: User, label: t("nav.profile") },
     { href: "/ai-assistant", icon: Bot, label: t("nav.ai_assistant") },
     { href: "/admin", icon: LayoutDashboard, label: "Admin" },
+    { href: "/landing", icon: Rocket, label: "About Trustchain" },
   ];
 
   return (

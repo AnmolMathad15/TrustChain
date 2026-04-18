@@ -27,3 +27,4 @@ export * from "./payments";
 export * from "./schemes";
 export * from "./notifications";
 export * from "./identity";
+export * from "./issuer";

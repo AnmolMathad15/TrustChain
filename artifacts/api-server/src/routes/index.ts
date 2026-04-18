@@ -14,6 +14,8 @@ import adminRouter from "./admin";
 import securityRouter from "./security";
 import didRouter from "./did";
 import credentialsRouter from "./credentials";
+import issuerRouter from "./issuer";
+import verifierRouter from "./verifier";
 
 const router: IRouter = Router();
 
@@ -32,5 +34,7 @@ router.use("/admin", adminRouter);
 router.use("/security", securityRouter);
 router.use("/did", didRouter);
 router.use("/credentials", credentialsRouter);
+router.use("/issuer", issuerRouter);
+router.use("/verifier", verifierRouter);
 
 export default router;

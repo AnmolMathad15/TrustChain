@@ -25,6 +25,9 @@ import Admin from "./pages/Admin";
 import Security from "./pages/Security";
 import Credentials from "./pages/Credentials";
 import Verify from "./pages/Verify";
+import Landing from "./pages/Landing";
+import IssuerPortal from "./pages/IssuerPortal";
+import VerifierPortal from "./pages/VerifierPortal";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,26 +40,38 @@ const queryClient = new QueryClient({
 
 function Router() {
   return (
-    <Layout>
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/documents" component={Documents} />
-        <Route path="/forms" component={FormsList} />
-        <Route path="/forms/:id" component={FormDetail} />
-        <Route path="/healthcare" component={Healthcare} />
-        <Route path="/payments" component={Payments} />
-        <Route path="/schemes" component={Schemes} />
-        <Route path="/notifications" component={Notifications} />
-        <Route path="/profile" component={Profile} />
-        <Route path="/atm" component={AtmAssistant} />
-        <Route path="/ai-assistant" component={AiAssistant} />
-        <Route path="/admin" component={Admin} />
-        <Route path="/security" component={Security} />
-        <Route path="/credentials" component={Credentials} />
-        <Route path="/verify" component={Verify} />
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+    <Switch>
+      {/* Landing page — no Layout wrapper */}
+      <Route path="/landing" component={Landing} />
+
+      {/* All other pages — inside Layout */}
+      <Route>
+        {() => (
+          <Layout>
+            <Switch>
+              <Route path="/" component={Dashboard} />
+              <Route path="/documents" component={Documents} />
+              <Route path="/forms" component={FormsList} />
+              <Route path="/forms/:id" component={FormDetail} />
+              <Route path="/healthcare" component={Healthcare} />
+              <Route path="/payments" component={Payments} />
+              <Route path="/schemes" component={Schemes} />
+              <Route path="/notifications" component={Notifications} />
+              <Route path="/profile" component={Profile} />
+              <Route path="/atm" component={AtmAssistant} />
+              <Route path="/ai-assistant" component={AiAssistant} />
+              <Route path="/admin" component={Admin} />
+              <Route path="/security" component={Security} />
+              <Route path="/credentials" component={Credentials} />
+              <Route path="/verify" component={Verify} />
+              <Route path="/issuer" component={IssuerPortal} />
+              <Route path="/verifier" component={VerifierPortal} />
+              <Route component={NotFound} />
+            </Switch>
+          </Layout>
+        )}
+      </Route>
+    </Switch>
   );
 }
 
