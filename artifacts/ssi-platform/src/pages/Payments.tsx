@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import PageHeader from "../components/PageHeader";
 
 type Bill = {
   id: number;
@@ -128,15 +129,13 @@ export default function Payments() {
 
   return (
     <div className="space-y-8">
-      <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-        <h2 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
-          <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-            <IndianRupee className="w-4 h-4 text-white" />
-          </span>
-          Payments & Bills
-        </h2>
-        <p className="text-muted-foreground mt-1">Manage your utility bills and BHIM UPI payments.</p>
-      </motion.div>
+      <PageHeader
+        icon={<IndianRupee size={20} />}
+        title="Payments & Bills"
+        subtitle="Manage your utility bills and BHIM UPI payments."
+        accent="#D97706"
+        accentRgb="217,119,6"
+      />
 
       {/* ── Summary Hero Card ─────────────────────────────────── */}
       <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1, duration: 0.4 }}>

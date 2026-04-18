@@ -1,15 +1,16 @@
 import React, { useState } from "react";
 import { useListDocuments } from "@workspace/api-client-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileText, Download, Sparkles, QrCode, ShieldCheck, CheckCircle2, ShieldX } from "lucide-react";
+import { FileText, Download, Sparkles, QrCode, ShieldCheck, CheckCircle2, ShieldX, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import QRCode from "react-qr-code";
 import { useToast } from "@/hooks/use-toast";
+import PageHeader, { AccentButton, GlassButton } from "../components/PageHeader";
+
+const ACCENT = "#2563EB";
+const ACCENT_RGB = "37,99,235";
 
 type VC = {
   credentialId: string;
@@ -20,6 +21,9 @@ type VC = {
   blockchain: { txHash: string; blockNumber: number; network: string } | null;
   documentId: number;
 };
+
+const STAGGER = { hidden: {}, visible: { transition: { staggerChildren: 0.08 } } };
+const ITEM = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.35 } } };
 
 export default function Documents() {
   const { data: documents, isLoading } = useListDocuments();
@@ -52,9 +56,9 @@ export default function Documents() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <h2 className="text-2xl font-bold">Documents</h2>
-        <div className="grid gap-4 md:grid-cols-2">
-          {[1, 2].map((i) => <Skeleton key={i} className="h-64 w-full" />)}
+        <Skeleton className="h-16 w-full rounded-xl" style={{ background: "var(--bg-elevated)" }} />
+        <div className="grid gap-5 md:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-64 w-full rounded-2xl" style={{ background: "var(--bg-elevated)" }} />)}
         </div>
       </div>
     );
@@ -62,105 +66,157 @@ export default function Documents() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">DigiLocker</h2>
-          <p className="text-muted-foreground">Secure access to your verified documents.</p>
-        </div>
-        <Button>Add Document</Button>
-      </div>
+      <PageHeader
+        icon={<FileText size={20} />}
+        title="DigiLocker"
+        subtitle="Your blockchain-anchored identity documents and Verifiable Credentials."
+        accent={ACCENT}
+        accentRgb={ACCENT_RGB}
+        actions={
+          <AccentButton accent={ACCENT} accentRgb={ACCENT_RGB} className="flex items-center gap-1.5">
+            <Plus size={14} /> Add Document
+          </AccentButton>
+        }
+      />
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <motion.div
+        variants={STAGGER}
+        initial="hidden"
+        animate="visible"
+        className="grid gap-5 md:grid-cols-2"
+      >
         {documents?.map((doc, i) => {
           const vc = getVC(doc.id);
           const isVerified = vc && vc.status === "active";
           const isRevoked = vc && vc.status === "revoked";
           return (
-            <motion.div
-              key={doc.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-            >
-              <Card className="overflow-hidden border-t-4 border-t-primary">
-                <CardHeader className="pb-2 flex flex-row items-start justify-between space-y-0">
-                  <div className="space-y-1">
-                    <CardTitle className="text-xl">{doc.name}</CardTitle>
-                    <p className="text-sm font-mono text-muted-foreground">{doc.documentNumber}</p>
+            <motion.div key={doc.id} variants={ITEM}>
+              <div
+                className="rounded-2xl overflow-hidden transition-all hover:translate-y-[-2px]"
+                style={{
+                  background: "var(--glass-bg)",
+                  backdropFilter: "blur(12px)",
+                  border: "1px solid var(--glass-border)",
+                  borderTop: `2px solid ${ACCENT}`,
+                  boxShadow: `var(--shadow-md), 0 0 20px rgba(${ACCENT_RGB}, 0.08)`,
+                }}
+              >
+                {/* Card Header */}
+                <div className="p-5 pb-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-[16px] font-bold" style={{ color: "var(--text-primary)" }}>{doc.name}</h3>
+                      <p className="font-mono text-[12px] mt-0.5" style={{ color: "var(--text-muted)" }}>{doc.documentNumber}</p>
+                    </div>
+                    <div className="flex flex-col gap-1.5 items-end flex-shrink-0">
+                      <span
+                        className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
+                        style={doc.status === "Verified"
+                          ? { background: "rgba(34,197,94,0.15)", color: "#22C55E", border: "1px solid rgba(34,197,94,0.3)" }
+                          : { background: "rgba(245,158,11,0.15)", color: "#F59E0B", border: "1px solid rgba(245,158,11,0.3)" }
+                        }
+                      >
+                        {doc.status}
+                      </span>
+                      {isVerified && (
+                        <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1"
+                          style={{ background: `rgba(${ACCENT_RGB}, 0.12)`, color: ACCENT, border: `1px solid rgba(${ACCENT_RGB}, 0.25)` }}>
+                          <ShieldCheck size={10} /> VC Active
+                        </span>
+                      )}
+                      {isRevoked && (
+                        <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1"
+                          style={{ background: "rgba(239,68,68,0.12)", color: "#EF4444", border: "1px solid rgba(239,68,68,0.25)" }}>
+                          <ShieldX size={10} /> VC Revoked
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-1 items-end">
-                    <Badge variant={doc.status === "Verified" ? "default" : "secondary"}>
-                      {doc.status}
-                    </Badge>
-                    {isVerified && (
-                      <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200 gap-1">
-                        <ShieldCheck className="h-3 w-3" />VC Active
-                      </Badge>
-                    )}
-                    {isRevoked && (
-                      <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200 gap-1">
-                        <ShieldX className="h-3 w-3" />VC Revoked
-                      </Badge>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="pb-4">
+
+                  {/* Blockchain badge */}
                   {isVerified && vc.blockchain && (
-                    <div className="flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1.5 rounded-lg mb-3">
-                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                      <span>Anchored on Polygon · Block #{vc.blockchain.blockNumber.toLocaleString()}</span>
+                    <div
+                      className="flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                      style={{ background: `rgba(${ACCENT_RGB}, 0.08)`, border: `1px solid rgba(${ACCENT_RGB}, 0.15)` }}
+                    >
+                      <CheckCircle2 size={11} style={{ color: ACCENT }} />
+                      <span className="font-mono text-[11px] font-medium" style={{ color: ACCENT }}>
+                        Anchored on Polygon · Block #{vc.blockchain.blockNumber.toLocaleString()}
+                      </span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 mt-2 text-sm">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground capitalize">{doc.type}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
+
+                  {/* Meta */}
+                  <div className="mt-4 grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-muted-foreground mb-1">Issued On</p>
-                      <p className="font-medium">{doc.issuedDate || "N/A"}</p>
+                      <p className="text-[10px] font-medium mb-0.5 uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                        Document Type
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <FileText size={12} style={{ color: "var(--text-secondary)" }} />
+                        <p className="text-[13px] font-medium capitalize" style={{ color: "var(--text-primary)" }}>{doc.type}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-medium mb-0.5 uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                        Issued On
+                      </p>
+                      <p className="text-[13px] font-medium" style={{ color: "var(--text-primary)" }}>{doc.issuedDate || "N/A"}</p>
                     </div>
                     {doc.expiryDate && (
                       <div>
-                        <p className="text-muted-foreground mb-1">Valid Till</p>
-                        <p className="font-medium">{doc.expiryDate}</p>
+                        <p className="text-[10px] font-medium mb-0.5 uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                          Valid Till
+                        </p>
+                        <p className="text-[13px] font-medium" style={{ color: "var(--text-primary)" }}>{doc.expiryDate}</p>
                       </div>
                     )}
                   </div>
-                </CardContent>
-                <CardFooter className="bg-muted/30 pt-4 flex flex-wrap gap-2">
-                  <Button variant="outline" className="flex-1 flex items-center gap-2">
-                    <Download className="h-4 w-4" /> Download
-                  </Button>
+                </div>
+
+                {/* Card Footer */}
+                <div className="px-5 pb-4 flex flex-wrap gap-2 pt-2"
+                  style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                  <GlassButton className="flex items-center gap-1.5 flex-1">
+                    <Download size={13} /> Download
+                  </GlassButton>
                   {vc && (
-                    <Button
-                      variant="outline"
-                      className="flex-1 flex items-center gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200"
+                    <AccentButton
+                      accent={ACCENT}
+                      accentRgb={ACCENT_RGB}
+                      className="flex items-center gap-1.5 flex-1"
                       onClick={() => setQrDoc({ doc, vc })}
                     >
-                      <QrCode className="h-4 w-4" /> Share VC
-                    </Button>
+                      <QrCode size={13} /> Share VC
+                    </AccentButton>
                   )}
                   {vc && (
-                    <Button
-                      variant="outline"
-                      className="flex-1 flex items-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200"
+                    <motion.button
+                      whileHover={{ scale: 1.02, y: -1 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => verifyMutation.mutate(vc.credentialId)}
                       disabled={verifyMutation.isPending}
+                      className="flex items-center gap-1.5 flex-1 px-4 py-2 rounded-[10px] text-[13px] font-medium transition-all cursor-pointer disabled:opacity-50"
+                      style={{
+                        background: "rgba(22,163,74,0.12)",
+                        border: "1px solid rgba(22,163,74,0.25)",
+                        color: "#16A34A",
+                      }}
                     >
-                      <ShieldCheck className="h-4 w-4" /> Verify
-                    </Button>
+                      <ShieldCheck size={13} /> Verify
+                    </motion.button>
                   )}
-                  <Button variant="secondary" className="flex-1 flex items-center gap-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200">
-                    <Sparkles className="h-4 w-4" /> AI Explain
-                  </Button>
-                </CardFooter>
-              </Card>
+                  <GlassButton className="flex items-center gap-1.5 flex-1">
+                    <Sparkles size={13} style={{ color: "#F59E0B" }} /> AI Explain
+                  </GlassButton>
+                </div>
+              </div>
             </motion.div>
           );
         })}
-      </div>
+      </motion.div>
 
+      {/* QR Share Dialog */}
       <Dialog open={!!qrDoc} onOpenChange={(o) => !o && setQrDoc(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -175,31 +231,29 @@ export default function Documents() {
                 />
               </div>
               <div className="text-center">
-                <p className="text-sm font-semibold">{qrDoc.doc.name}</p>
-                <p className="text-xs font-mono text-muted-foreground mt-1">{qrDoc.vc.credentialId}</p>
+                <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{qrDoc.doc.name}</p>
+                <p className="font-mono text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>{qrDoc.vc.credentialId}</p>
               </div>
-              <div className="w-full space-y-1 text-xs font-mono bg-muted/50 rounded-xl p-3">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Hash</span>
-                  <span>{qrDoc.vc.hash.slice(0, 18)}...</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">IPFS</span>
-                  <span>{qrDoc.vc.ipfsCid.slice(0, 18)}...</span>
-                </div>
-                {qrDoc.vc.blockchain && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Block</span>
-                    <span>#{qrDoc.vc.blockchain.blockNumber.toLocaleString()}</span>
+              <div className="w-full space-y-1 rounded-xl p-3" style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)" }}>
+                {[
+                  { label: "Hash", value: qrDoc.vc.hash.slice(0, 18) + "..." },
+                  { label: "IPFS", value: qrDoc.vc.ipfsCid.slice(0, 18) + "..." },
+                  ...(qrDoc.vc.blockchain ? [{ label: "Block", value: `#${qrDoc.vc.blockchain.blockNumber.toLocaleString()}` }] : []),
+                ].map(({ label, value }) => (
+                  <div key={label} className="flex justify-between text-[11px] font-mono">
+                    <span style={{ color: "var(--text-muted)" }}>{label}</span>
+                    <span style={{ color: ACCENT }}>{value}</span>
                   </div>
-                )}
+                ))}
               </div>
-              <Button
-                className="w-full gap-2"
+              <AccentButton
+                accent={ACCENT}
+                accentRgb={ACCENT_RGB}
+                className="w-full flex items-center justify-center gap-2"
                 onClick={() => { verifyMutation.mutate(qrDoc.vc.credentialId); setQrDoc(null); }}
               >
-                <CheckCircle2 className="h-4 w-4" /> Verify on Blockchain
-              </Button>
+                <CheckCircle2 size={14} /> Verify on Blockchain
+              </AccentButton>
             </div>
           )}
         </DialogContent>

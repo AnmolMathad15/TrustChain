@@ -1,9 +1,7 @@
 import React, { useRef } from "react";
 import { useGetDashboardSummary, useGetUserProfile, useListNotifications, useListBills } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useKioskMode } from "../contexts/KioskModeContext";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -11,17 +9,16 @@ import { Link } from "wouter";
 import {
   CreditCard, FileText, FileEdit, Heart, Wallet, Umbrella,
   Bell, ChevronRight, Sparkles, ShieldCheck, TrendingUp, Clock,
-  ArrowRight, Activity,
+  ArrowRight, Activity, Zap,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
-/* ── 3D tilt card hook ─────────────────────────────────────────── */
-function TiltCard({ children, className = "", glow = "" }: { children: React.ReactNode; className?: string; glow?: string }) {
+function TiltCard({ children, className = "", style = {} }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   const ref = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [8, -8]), { stiffness: 400, damping: 35 });
-  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-8, 8]), { stiffness: 400, damping: 35 });
+  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [6, -6]), { stiffness: 400, damping: 35 });
+  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-6, 6]), { stiffness: 400, damping: 35 });
 
   const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!ref.current) return;
@@ -29,16 +26,14 @@ function TiltCard({ children, className = "", glow = "" }: { children: React.Rea
     x.set((e.clientX - left) / width - 0.5);
     y.set((e.clientY - top) / height - 0.5);
   };
-  const handleLeave = () => { x.set(0); y.set(0); };
-
   return (
-    <div className="perspective" ref={ref} onMouseMove={handleMove} onMouseLeave={handleLeave}>
+    <div className="perspective" ref={ref} onMouseMove={handleMove} onMouseLeave={() => { x.set(0); y.set(0); }}>
       <motion.div
-        style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-        whileHover={{ scale: 1.04, z: 30 }}
+        style={{ rotateX, rotateY, transformStyle: "preserve-3d", ...style }}
+        whileHover={{ scale: 1.03, z: 20 }}
         whileTap={{ scale: 0.98 }}
-        transition={{ duration: 0.2 }}
-        className={`shimmer-card ${glow} ${className}`}
+        transition={{ duration: 0.18 }}
+        className={`shimmer-card ${className}`}
       >
         {children}
       </motion.div>
@@ -46,18 +41,28 @@ function TiltCard({ children, className = "", glow = "" }: { children: React.Rea
   );
 }
 
-const STAGGER = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.07 } },
-};
-const ITEM = {
-  hidden: { opacity: 0, y: 24, scale: 0.95 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: [0.23, 1, 0.32, 1] } },
-};
+const STAGGER = { hidden: {}, visible: { transition: { staggerChildren: 0.07 } } };
+const ITEM = { hidden: { opacity: 0, y: 20, scale: 0.96 }, visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.35, ease: [0.23, 1, 0.32, 1] } } };
+
+const STATS = [
+  { label: "Documents", key: "documentsCount", icon: FileText, accent: "#2563EB", accentRgb: "37,99,235" },
+  { label: "Pending Bills", key: "pendingBills", icon: Wallet, accent: "#D97706", accentRgb: "217,119,6" },
+  { label: "Schemes", key: "availableSchemes", icon: ShieldCheck, accent: "#059669", accentRgb: "5,150,105" },
+  { label: "Pending Forms", key: "pendingForms", icon: TrendingUp, accent: "#7C3AED", accentRgb: "124,58,237" },
+];
+
+const MODULES = [
+  { href: "/atm", icon: CreditCard, label: "ATM Assistant", accent: "#3B82F6", accentRgb: "59,130,246", desc: "Cash & banking" },
+  { href: "/documents", icon: FileText, label: "Documents", accent: "#2563EB", accentRgb: "37,99,235", desc: "DigiLocker & VCs", key: "documentsCount" },
+  { href: "/forms", icon: FileEdit, label: "Forms", accent: "#7C3AED", accentRgb: "124,58,237", desc: "Govt applications", key: "pendingForms" },
+  { href: "/healthcare", icon: Heart, label: "Healthcare", accent: "#DC2626", accentRgb: "220,38,38", desc: "ABHA & records" },
+  { href: "/payments", icon: Wallet, label: "Payments", accent: "#D97706", accentRgb: "217,119,6", desc: "Bills & UPI", key: "pendingBills" },
+  { href: "/schemes", icon: Umbrella, label: "Schemes", accent: "#059669", accentRgb: "5,150,105", desc: "Govt benefits", key: "availableSchemes" },
+];
 
 export default function Dashboard() {
-  const { data: profile, isLoading: isProfileLoading } = useGetUserProfile();
-  const { data: summary, isLoading: isSummaryLoading } = useGetDashboardSummary();
+  const { data: profile, isLoading: profileLoading } = useGetUserProfile();
+  const { data: summary, isLoading: summaryLoading } = useGetDashboardSummary();
   const { data: notifications } = useListNotifications();
   const { data: bills } = useListBills();
   const { isKioskMode } = useKioskMode();
@@ -69,159 +74,118 @@ export default function Dashboard() {
     refetchInterval: 30_000,
   });
 
-  const modules = [
-    { href: "/atm", icon: CreditCard, label: t("nav.atm"), gradient: "from-blue-500 via-blue-600 to-cyan-600", glow: "glow-blue", count: null },
-    { href: "/documents", icon: FileText, label: t("nav.documents"), gradient: "from-violet-500 via-indigo-600 to-indigo-700", glow: "glow-purple", count: summary?.documentsCount },
-    { href: "/forms", icon: FileEdit, label: t("nav.forms"), gradient: "from-fuchsia-500 via-purple-600 to-violet-700", glow: "glow-purple", count: summary?.pendingForms },
-    { href: "/healthcare", icon: Heart, label: t("nav.healthcare"), gradient: "from-rose-500 via-rose-600 to-pink-700", glow: "glow-rose", count: null },
-    { href: "/payments", icon: Wallet, label: t("nav.payments"), gradient: "from-orange-500 via-amber-500 to-yellow-500", glow: "glow-orange", count: summary?.pendingBills },
-    { href: "/schemes", icon: Umbrella, label: t("nav.schemes"), gradient: "from-emerald-500 via-teal-500 to-green-600", glow: "glow-emerald", count: summary?.availableSchemes },
-  ];
+  const unread = notifications?.filter((n: any) => !n.isRead).length ?? 0;
+  const pendingBills = bills?.filter((b: any) => b.status === "pending") ?? [];
 
-  const unreadNotifications = notifications?.filter((n: any) => !n.isRead).length ?? 0;
-  const pendingBillsData = bills?.filter((b: any) => b.status === "pending") ?? [];
-
-  const smartSuggestions = [
-    ...pendingBillsData.slice(0, 2).map((b: any) => ({
+  const suggestions = [
+    ...pendingBills.slice(0, 2).map((b: any) => ({
       label: `Pay ${b.billerName} — ₹${Number(b.amount).toLocaleString("en-IN")} due soon`,
-      href: "/payments",
-      icon: Wallet,
-      urgent: true,
+      href: "/payments", icon: Wallet, urgent: true,
     })),
-    ...(unreadNotifications > 0 ? [{
-      label: `${unreadNotifications} unread notification${unreadNotifications > 1 ? "s" : ""}`,
-      href: "/notifications",
-      icon: Bell,
-      urgent: false,
-    }] : []),
+    ...(unread > 0 ? [{ label: `${unread} unread notification${unread > 1 ? "s" : ""}`, href: "/notifications", icon: Bell, urgent: false }] : []),
   ].slice(0, 3);
 
-  const stats = [
-    { label: "Documents", value: summary?.documentsCount ?? 0, icon: FileText, from: "from-blue-500", to: "to-indigo-600", glow: "shadow-blue-500/30" },
-    { label: "Pending Bills", value: summary?.pendingBills ?? 0, icon: Wallet, from: "from-orange-500", to: "to-amber-500", glow: "shadow-orange-500/30" },
-    { label: "Schemes", value: summary?.availableSchemes ?? 0, icon: ShieldCheck, from: "from-emerald-500", to: "to-teal-600", glow: "shadow-emerald-500/30" },
-    { label: "Pending Forms", value: summary?.pendingForms ?? 0, icon: TrendingUp, from: "from-purple-500", to: "to-fuchsia-600", glow: "shadow-purple-500/30" },
-  ];
-
-  if (isProfileLoading || isSummaryLoading) {
+  if (profileLoading || summaryLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-44 w-full rounded-3xl" />
+        <Skeleton className="h-44 w-full rounded-2xl" style={{ background: "var(--bg-elevated)" }} />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-2xl" />)}
+          {[1,2,3,4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-2xl" style={{ background: "var(--bg-elevated)" }} />)}
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
-          {[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-44 w-full rounded-2xl" />)}
+          {[1,2,3,4,5,6].map((i) => <Skeleton key={i} className="h-44 w-full rounded-2xl" style={{ background: "var(--bg-elevated)" }} />)}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* ── Hero Banner ─────────────────────────────────────────── */}
+    <div className="space-y-7">
+      {/* ── Hero Banner ── */}
       <motion.div
-        initial={{ opacity: 0, y: -24, scale: 0.98 }}
+        initial={{ opacity: 0, y: -20, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-        className="relative overflow-hidden rounded-3xl noise"
+        transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
+        className="relative overflow-hidden rounded-2xl noise"
         style={{
-          background: "linear-gradient(135deg, #1e3a8a 0%, #4f46e5 40%, #7c3aed 70%, #a21caf 100%)",
-          backgroundSize: "300% 300%",
-          animation: "gradient-x 8s ease infinite",
+          background: "linear-gradient(135deg, #1e1b4b 0%, #3730a3 30%, #7c3aed 65%, #a21caf 100%)",
+          boxShadow: "0 8px 40px rgba(124,58,237,0.35)",
         }}
       >
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-12 -right-12 w-64 h-64 rounded-full bg-white/8 blur-3xl animate-float-slow" />
-          <div className="absolute -bottom-8 -left-8 w-48 h-48 rounded-full bg-purple-300/10 blur-2xl" style={{ animation: "float-slow 10s ease-in-out infinite reverse" }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-32 rounded-full bg-indigo-400/5 blur-3xl" />
+          <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full opacity-20 blur-3xl animate-float-slow"
+            style={{ background: "radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)" }} />
+          <div className="absolute -bottom-12 -left-8 w-56 h-56 rounded-full opacity-15 blur-2xl"
+            style={{ background: "radial-gradient(circle, rgba(167,139,250,0.5) 0%, transparent 70%)", animation: "float-slow 10s ease-in-out infinite reverse" }} />
         </div>
-        <div className="relative z-10 p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="relative z-10 p-7 flex flex-col md:flex-row md:items-center justify-between gap-5">
           <div>
-            <motion.p
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.15 }}
-              className="text-blue-200 text-sm font-semibold mb-1 tracking-wide"
-            >
+            <motion.p initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
+              className="text-purple-200 text-xs font-semibold mb-1 tracking-widest uppercase">
               Welcome back
             </motion.p>
-            <motion.h2
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className={`font-extrabold tracking-tight text-white ${isKioskMode ? "text-4xl" : "text-3xl"}`}
-            >
-              {t("greeting")}, {profile?.name || "User"}
+            <motion.h2 initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}
+              className={`font-extrabold tracking-tight text-white ${isKioskMode ? "text-4xl" : "text-[28px]"}`}>
+              {t("greeting")}, {profile?.name || "Rahul Kumar"}
             </motion.h2>
-            <motion.div
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.25 }}
-              className="flex items-center gap-2 mt-3"
-            >
-              <ShieldCheck className="h-4 w-4 text-emerald-300" />
-              <span className="font-mono text-sm text-blue-200/90">{profile?.ssiId}</span>
-              <Badge className="bg-emerald-400/20 text-emerald-300 border-emerald-400/30 text-xs">Verified</Badge>
+            <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
+              className="flex items-center gap-2 mt-3">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />
+              <span className="font-mono text-xs text-purple-200/90">{profile?.ssiId || "SSI20240001"}</span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                style={{ background: "rgba(52,211,153,0.2)", color: "#6ee7b7", border: "1px solid rgba(52,211,153,0.3)" }}>
+                Verified
+              </span>
             </motion.div>
           </div>
-          <div className="flex flex-col items-start md:items-end gap-3">
-            {unreadNotifications > 0 && !isKioskMode && (
+          <div className="flex flex-col items-start md:items-end gap-2.5">
+            {unread > 0 && !isKioskMode && (
               <Link href="/notifications">
-                <motion.div
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white/12 backdrop-blur border border-white/20 text-white text-sm font-semibold cursor-pointer hover:bg-white/20 transition-colors"
-                >
-                  <Bell className="h-4 w-4" />
-                  {unreadNotifications} new alert{unreadNotifications > 1 ? "s" : ""}
-                  <ArrowRight className="h-4 w-4" />
+                <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl cursor-pointer text-white text-xs font-semibold"
+                  style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.18)" }}>
+                  <Bell className="h-3.5 w-3.5" />
+                  {unread} new alert{unread > 1 ? "s" : ""}
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </motion.div>
               </Link>
             )}
-            <motion.div
-              animate={{ opacity: [0.5, 1, 0.5] }}
-              transition={{ repeat: Infinity, duration: 3 }}
-              className="flex items-center gap-2 text-xs text-blue-200/80"
-            >
-              <Activity className="h-3.5 w-3.5" />
+            <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 3 }}
+              className="flex items-center gap-1.5 text-[11px] text-purple-200/70">
+              <Activity className="h-3 w-3" />
               <span>Polygon Mumbai · All systems live</span>
             </motion.div>
           </div>
         </div>
       </motion.div>
 
-      {/* ── Stats Row ───────────────────────────────────────────── */}
+      {/* ── Stats Row ── */}
       {!isKioskMode && (
-        <motion.div
-          variants={STAGGER}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
-        >
-          {stats.map((stat, i) => {
+        <motion.div variants={STAGGER} initial="hidden" animate="visible" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {STATS.map((stat, i) => {
             const Icon = stat.icon;
+            const val = (summary as any)?.[stat.key] ?? 0;
             return (
               <motion.div key={stat.label} variants={ITEM}>
-                <TiltCard glow={`shadow-lg ${stat.glow}`}>
-                  <Card className="border-none h-full overflow-hidden">
-                    <CardContent className="p-5 flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${stat.from} ${stat.to} flex items-center justify-center shadow-lg shrink-0`}>
-                        <Icon className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <motion.p
-                          initial={{ opacity: 0, scale: 0.5 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: 0.3 + i * 0.07, type: "spring" }}
-                          className="text-2xl font-extrabold leading-none"
-                        >
-                          {stat.value}
-                        </motion.p>
-                        <p className="text-xs text-muted-foreground mt-1 font-medium">{stat.label}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
+                <TiltCard>
+                  <div className="rounded-2xl p-5 flex items-center gap-4 transition-all"
+                    style={{
+                      background: "var(--glass-bg)",
+                      border: `1px solid rgba(${stat.accentRgb}, 0.20)`,
+                      borderTop: `2px solid ${stat.accent}`,
+                    }}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: `rgba(${stat.accentRgb}, 0.15)` }}>
+                      <Icon className="h-5 w-5" style={{ color: stat.accent }} />
+                    </div>
+                    <div>
+                      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 + i * 0.07 }}
+                        className="text-2xl font-extrabold leading-none" style={{ color: "var(--text-primary)" }}>
+                        {val}
+                      </motion.p>
+                      <p className="text-xs mt-0.5 font-medium" style={{ color: "var(--text-secondary)" }}>{stat.label}</p>
+                    </div>
+                  </div>
                 </TiltCard>
               </motion.div>
             );
@@ -229,67 +193,66 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      {/* ── Smart Suggestions ───────────────────────────────────── */}
-      {smartSuggestions.length > 0 && !isKioskMode && (
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-          <Card className="border-none shadow-lg overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-indigo-500/5 to-purple-500/5" />
-            <CardHeader className="pb-2 relative">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary animate-pulse" />
-                Smart Suggestions
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 relative">
-              {smartSuggestions.map((s, i) => {
+      {/* ── Smart Suggestions ── */}
+      {suggestions.length > 0 && !isKioskMode && (
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <div className="rounded-2xl p-5"
+            style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)", backdropFilter: "blur(12px)" }}>
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="h-3.5 w-3.5 animate-pulse" style={{ color: "#F59E0B" }} />
+              <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>Smart Suggestions</p>
+            </div>
+            <div className="space-y-1.5">
+              {suggestions.map((s, i) => {
                 const Icon = s.icon;
                 return (
                   <Link key={i} href={s.href}>
-                    <motion.div
-                      whileHover={{ x: 8, backgroundColor: s.urgent ? "rgb(255 237 213 / 0.7)" : "hsl(var(--muted))" }}
-                      className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors ${s.urgent ? "bg-orange-50/60 dark:bg-orange-950/30" : "bg-muted/40"}`}
-                    >
-                      <Icon className={`h-4 w-4 shrink-0 ${s.urgent ? "text-orange-600" : "text-muted-foreground"}`} />
-                      <p className={`text-sm font-medium flex-1 ${s.urgent ? "text-orange-700 dark:text-orange-300" : ""}`}>{s.label}</p>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <motion.div whileHover={{ x: 6 }} className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-colors"
+                      style={{ background: s.urgent ? "rgba(217,119,6,0.08)" : "var(--glass-bg)", border: s.urgent ? "1px solid rgba(217,119,6,0.2)" : "1px solid transparent" }}>
+                      <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: s.urgent ? "#D97706" : "var(--text-muted)" }} />
+                      <p className="text-xs font-medium flex-1" style={{ color: s.urgent ? "#D97706" : "var(--text-secondary)" }}>{s.label}</p>
+                      <ChevronRight className="h-3.5 w-3.5" style={{ color: "var(--text-muted)" }} />
                     </motion.div>
                   </Link>
                 );
               })}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </motion.div>
       )}
 
-      {/* ── Module Cards ────────────────────────────────────────── */}
-      <motion.div
-        variants={STAGGER}
-        initial="hidden"
-        animate="visible"
-        className={`grid gap-5 ${isKioskMode ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}
-      >
-        {modules.map((mod) => {
+      {/* ── Module Grid ── */}
+      <motion.div variants={STAGGER} initial="hidden" animate="visible"
+        className={`grid gap-4 ${isKioskMode ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
+        {MODULES.map((mod) => {
           const Icon = mod.icon;
+          const count = (summary as any)?.[mod.key ?? ""] as number | undefined;
           return (
             <motion.div key={mod.href} variants={ITEM}>
               <Link href={mod.href} className="block">
-                <TiltCard glow={`shadow-xl ${mod.glow}`}>
-                  <Card className="overflow-hidden border-none h-full group">
-                    <CardContent className={`${isKioskMode ? "p-8" : "p-6"} flex flex-col items-center justify-center text-center h-full gap-5`}>
-                      <div className={`relative rounded-2xl flex items-center justify-center text-white bg-gradient-to-br ${mod.gradient} shadow-xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 ${isKioskMode ? "w-24 h-24" : "w-16 h-16"}`}>
-                        <div className="absolute inset-0 rounded-2xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        <Icon size={isKioskMode ? 48 : 28} />
+                <TiltCard>
+                  <div className="rounded-2xl overflow-hidden group cursor-pointer"
+                    style={{
+                      background: `linear-gradient(135deg, rgba(${mod.accentRgb}, 0.12) 0%, rgba(${mod.accentRgb}, 0.05) 100%)`,
+                      border: `1px solid rgba(${mod.accentRgb}, 0.22)`,
+                      borderTop: `2px solid ${mod.accent}`,
+                      boxShadow: `0 4px 20px rgba(${mod.accentRgb}, 0.10)`,
+                    }}>
+                    <div className={`${isKioskMode ? "p-8" : "p-6"} flex flex-col items-center text-center gap-4`}>
+                      <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-400 group-hover:scale-110 group-hover:rotate-6"
+                        style={{ background: `rgba(${mod.accentRgb}, 0.18)`, boxShadow: `0 0 20px rgba(${mod.accentRgb}, 0.25)` }}>
+                        <Icon size={isKioskMode ? 36 : 24} style={{ color: mod.accent }} />
                       </div>
                       <div>
-                        <h3 className={`font-bold leading-tight ${isKioskMode ? "text-2xl" : "text-base"}`}>{mod.label}</h3>
-                        {mod.count !== undefined && mod.count !== null && (
-                          <p className={`text-muted-foreground mt-1 font-medium ${isKioskMode ? "text-lg" : "text-sm"}`}>
-                            {mod.count} available
-                          </p>
+                        <h3 className={`font-bold leading-tight ${isKioskMode ? "text-xl" : "text-[15px]"}`}
+                          style={{ color: "var(--text-primary)" }}>{mod.label}</h3>
+                        <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{mod.desc}</p>
+                        {count !== undefined && count !== null && (
+                          <p className="text-xs mt-1.5 font-semibold" style={{ color: mod.accent }}>{count} available</p>
                         )}
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 </TiltCard>
               </Link>
             </motion.div>
@@ -297,65 +260,70 @@ export default function Dashboard() {
         })}
       </motion.div>
 
-      {/* ── Bottom Grid ─────────────────────────────────────────── */}
+      {/* ── Bottom: Activity + Quick Actions ── */}
       {!isKioskMode && (
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card className="border-none shadow-md">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                <Clock className="h-4 w-4 text-primary" />
-                {t("recent_activity")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {activityLog.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-6 text-center">No recent activity yet.</p>
-              ) : (
-                <div className="relative border-l-2 border-dashed border-muted-foreground/15 ml-2 space-y-4 pb-2">
-                  {activityLog.slice(0, 5).map((item: any, i: number) => (
-                    <motion.div
-                      key={item.id ?? i}
-                      initial={{ opacity: 0, x: -12 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.06, duration: 0.3 }}
-                      className="pl-5 relative"
-                    >
-                      <div className={`absolute w-3 h-3 rounded-full -left-[7px] top-1.5 ring-4 ring-background ${i === 0 ? "bg-primary shadow-lg shadow-primary/40" : "bg-muted-foreground/30"}`} />
-                      <p className="text-sm font-medium capitalize leading-snug">{item.description}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {item.module && <span className="capitalize mr-1 text-primary/70 font-medium">[{item.module}]</span>}
-                        {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
-                      </p>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <div className="grid gap-5 md:grid-cols-2">
+          {/* Activity Feed */}
+          <div className="rounded-2xl p-5" style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)", backdropFilter: "blur(12px)" }}>
+            <div className="flex items-center gap-2 mb-4">
+              <Clock className="h-3.5 w-3.5" style={{ color: "#7C3AED" }} />
+              <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>{t("recent_activity")}</p>
+            </div>
+            {activityLog.length === 0 ? (
+              <p className="text-xs text-center py-6" style={{ color: "var(--text-muted)" }}>No recent activity yet.</p>
+            ) : (
+              <div className="relative border-l-2 border-dashed ml-2 space-y-3.5 pb-1"
+                style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+                {activityLog.slice(0, 5).map((item: any, i: number) => (
+                  <motion.div key={item.id ?? i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.06 }} className="pl-4 relative">
+                    <div className={`absolute w-2.5 h-2.5 rounded-full -left-[7px] top-1.5`}
+                      style={{
+                        background: i === 0 ? "#7C3AED" : "rgba(255,255,255,0.15)",
+                        boxShadow: i === 0 ? "0 0 8px rgba(124,58,237,0.5)" : "none",
+                        border: "2px solid var(--bg-surface)",
+                      }} />
+                    <p className="text-[12px] font-medium capitalize leading-snug" style={{ color: "var(--text-primary)" }}>
+                      {item.description}
+                    </p>
+                    <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                      {item.module && <span className="mr-1 font-semibold" style={{ color: "#7C3AED" }}>[{item.module}]</span>}
+                      {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
 
-          <Card className="border-none shadow-md">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-3">
+          {/* Quick Actions */}
+          <div className="rounded-2xl p-5" style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)", backdropFilter: "blur(12px)" }}>
+            <div className="flex items-center gap-2 mb-4">
+              <Zap className="h-3.5 w-3.5" style={{ color: "#7C3AED" }} />
+              <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>Quick Actions</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               {[
-                { label: "Pay Bills", href: "/payments", gradient: "from-orange-500 to-amber-500", shadow: "shadow-orange-500/30" },
-                { label: "Check Schemes", href: "/schemes", gradient: "from-emerald-500 to-teal-500", shadow: "shadow-emerald-500/30" },
-                { label: "My Health", href: "/healthcare", gradient: "from-rose-500 to-pink-500", shadow: "shadow-rose-500/30" },
-                { label: "Documents", href: "/documents", gradient: "from-indigo-500 to-violet-600", shadow: "shadow-indigo-500/30" },
+                { label: "Pay Bills", href: "/payments", accent: "#D97706", accentRgb: "217,119,6" },
+                { label: "Check Schemes", href: "/schemes", accent: "#059669", accentRgb: "5,150,105" },
+                { label: "My Health", href: "/healthcare", accent: "#DC2626", accentRgb: "220,38,38" },
+                { label: "Documents", href: "/documents", accent: "#2563EB", accentRgb: "37,99,235" },
               ].map((action) => (
                 <Link key={action.href} href={action.href}>
-                  <motion.div
-                    whileHover={{ scale: 1.05, y: -3, boxShadow: "0 12px 28px var(--tw-shadow-color)" }}
-                    whileTap={{ scale: 0.96 }}
-                    className={`bg-gradient-to-br ${action.gradient} text-white text-sm font-bold px-4 py-5 rounded-2xl cursor-pointer text-center shadow-lg ${action.shadow} transition-all`}
-                  >
+                  <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.96 }}
+                    className="text-[13px] font-bold px-4 py-4 rounded-xl cursor-pointer text-center transition-all"
+                    style={{
+                      background: `rgba(${action.accentRgb}, 0.12)`,
+                      border: `1px solid rgba(${action.accentRgb}, 0.25)`,
+                      color: action.accent,
+                      boxShadow: `0 4px 16px rgba(${action.accentRgb}, 0.12)`,
+                    }}>
                     {action.label}
                   </motion.div>
                 </Link>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -1,0 +1,666 @@
+You are a senior UI/UX engineer specializing in modern Web3 SaaS interfaces.
+Redesign the TrustChain-SSSI platform UI with the following complete design 
+system. Every component must follow these rules exactly.
+
+## Design Philosophy
+Modern glassmorphism SaaS dashboard. Think: Notion + Linear + Web3 wallet 
+UI combined. Professional enough for enterprise, beautiful enough for 
+consumer. Indian government identity platform that feels trustworthy but 
+cutting-edge.
+
+---
+
+## COLOR SYSTEM
+
+### Dark Mode (default)
+\`\`\`css
+:root[data-theme="dark"] {
+  /* Base backgrounds */
+  --bg-base:        #080B14;   /* deepest background */
+  --bg-surface:     #0D1117;   /* page background */
+  --bg-elevated:    #161B27;   /* cards, panels */
+  --bg-overlay:     #1C2333;   /* modals, dropdowns */
+
+  /* Glass effect */
+  --glass-bg:       rgba(255, 255, 255, 0.05);
+  --glass-border:   rgba(255, 255, 255, 0.08);
+  --glass-hover:    rgba(255, 255, 255, 0.08);
+  --glass-blur:     12px;
+
+  /* Text */
+  --text-primary:   #F0F6FC;
+  --text-secondary: #8B949E;
+  --text-muted:     #484F58;
+  --text-inverse:   #080B14;
+
+  /* Section accent colors (multi-color per section) */
+  --accent-dashboard:   #7C3AED;   /* Purple — identity/home */
+  --accent-documents:   #2563EB;   /* Blue — documents/DigiLocker */
+  --accent-healthcare:  #DC2626;   /* Red — health/ABHA */
+  --accent-payments:    #D97706;   /* Amber — payments/bills */
+  --accent-schemes:     #059669;   /* Emerald — schemes/benefits */
+  --accent-forms:       #7C3AED;   /* Purple — forms */
+  --accent-credentials: #0891B2;   /* Cyan — credentials/VC */
+  --accent-verify:      #16A34A;   /* Green — verify */
+  --accent-security:    #9333EA;   /* Violet — security */
+  --accent-ai:          #F59E0B;   /* Yellow — AI assistant */
+  --accent-atm:         #3B82F6;   /* Blue — ATM */
+
+  /* Status colors */
+  --status-verified:  #22C55E;
+  --status-pending:   #F59E0B;
+  --status-revoked:   #EF4444;
+  --status-active:    #3B82F6;
+  --status-expired:   #6B7280;
+
+  /* Borders */
+  --border-subtle:  rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.10);
+  --border-strong:  rgba(255, 255, 255, 0.16);
+
+  /* Shadows */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.6);
+  --shadow-glow-purple: 0 0 24px rgba(124,58,237,0.25);
+  --shadow-glow-blue:   0 0 24px rgba(37,99,235,0.25);
+  --shadow-glow-green:  0 0 24px rgba(5,150,105,0.25);
+}
+\`\`\`
+
+### Light Mode
+\`\`\`css
+:root[data-theme="light"] {
+  --bg-base:        #F8FAFC;
+  --bg-surface:     #FFFFFF;
+  --bg-elevated:    #F1F5F9;
+  --bg-overlay:     #E2E8F0;
+
+  --glass-bg:       rgba(255, 255, 255, 0.7);
+  --glass-border:   rgba(0, 0, 0, 0.08);
+  --glass-hover:    rgba(0, 0, 0, 0.04);
+  --glass-blur:     12px;
+
+  --text-primary:   #0F172A;
+  --text-secondary: #475569;
+  --text-muted:     #94A3B8;
+  --text-inverse:   #F8FAFC;
+
+  /* Same accent colors, slightly darker for light bg */
+  --accent-dashboard:   #6D28D9;
+  --accent-documents:   #1D4ED8;
+  --accent-healthcare:  #B91C1C;
+  --accent-payments:    #B45309;
+  --accent-schemes:     #047857;
+  --accent-credentials: #0E7490;
+  --accent-verify:      #15803D;
+  --accent-security:    #7E22CE;
+  --accent-ai:          #D97706;
+  --accent-atm:         #2563EB;
+
+  --border-subtle:  rgba(0, 0, 0, 0.05);
+  --border-default: rgba(0, 0, 0, 0.10);
+  --border-strong:  rgba(0, 0, 0, 0.18);
+
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.10);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.12);
+  --shadow-glow-purple: 0 0 24px rgba(109,40,217,0.15);
+  --shadow-glow-blue:   0 0 24px rgba(29,78,216,0.15);
+  --shadow-glow-green:  0 0 24px rgba(4,120,87,0.15);
+}
+\`\`\`
+
+---
+
+## TYPOGRAPHY SYSTEM
+\`\`\`css
+/* Import in index.html */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+--font-sans:  'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+--font-mono:  'JetBrains Mono', 'Fira Code', monospace;
+
+/* Scale */
+--text-xs:   11px;  line-height: 16px;
+--text-sm:   13px;  line-height: 20px;
+--text-base: 14px;  line-height: 22px;
+--text-md:   16px;  line-height: 24px;
+--text-lg:   18px;  line-height: 28px;
+--text-xl:   20px;  line-height: 30px;
+--text-2xl:  24px;  line-height: 36px;
+--text-3xl:  30px;  line-height: 44px;
+\`\`\`
+
+---
+
+## GLASSMORPHISM COMPONENT RULES
+
+### Glass Card (medium intensity)
+\`\`\`css
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease;
+}
+.glass-card:hover {
+  background: var(--glass-hover);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+\`\`\`
+
+### Glass Card with Accent Top Border
+\`\`\`css
+.glass-card-accented {
+  /* same as glass-card + */
+  border-top: 2px solid var(--section-accent);
+  box-shadow: var(--shadow-md), 
+              0 -1px 0 var(--section-accent),
+              0 4px 20px rgba(var(--section-accent-rgb), 0.15);
+}
+\`\`\`
+
+### Sidebar Glass
+\`\`\`css
+.sidebar {
+  background: rgba(13, 17, 23, 0.85);  /* dark mode */
+  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border-subtle);
+  width: 220px;
+  height: 100vh;
+  position: fixed;
+}
+\`\`\`
+
+---
+
+## SIDEBAR REDESIGN
+
+### Structure
+\`\`\`
+┌─────────────────────┐
+│  ⚡ TrustChain      │  ← Logo + name, 24px
+│  SSSI Platform      │  ← Tagline, 10px muted
+├─────────────────────┤
+│  [Avatar] Rahul K.  │  ← User mini profile
+│  did:poly...001 ✓   │  ← DID truncated + verified badge
+├─────────────────────┤
+│  MAIN               │  ← Section label 10px uppercase
+│  ◉ Dashboard        │  ← Active: accent bg pill
+│  ○ ATM Assistant    │
+│  ○ Documents        │
+│  ○ Forms            │
+│  ○ Healthcare       │
+│  ○ Payments         │
+│  ○ Schemes          │
+│                     │
+│  IDENTITY           │  ← Section label
+│  ○ Credentials      │
+│  ○ Verify VC        │
+│  ○ Security         │
+│                     │
+│  OTHER              │  ← Section label
+│  ○ Notifications  3 │  ← Unread badge
+│  ○ AI Assistant     │
+│  ○ Profile          │
+│  ○ Admin            │
+├─────────────────────┤
+│  ☀/🌙 Light/Dark   │  ← Theme toggle bottom
+│  v2.0.0             │  ← Version
+└─────────────────────┘
+\`\`\`
+
+### Active Nav Item Style
+\`\`\`css
+.nav-item-active {
+  background: rgba(var(--section-accent-rgb), 0.15);
+  border-left: 3px solid var(--section-accent);
+  color: var(--section-accent);
+  border-radius: 0 8px 8px 0;
+}
+/* Each section has its OWN accent color applied to active state */
+\`\`\`
+
+---
+
+## PAGE-SPECIFIC COLOR THEMES
+
+Each page uses its section accent color for:
+- Active sidebar item
+- Page header icon/underline
+- Primary buttons
+- Card top borders
+- Badge backgrounds
+- Glow effects
+
+### Dashboard → Purple (#7C3AED)
+- Welcome banner: purple gradient
+- Stat cards: purple glow on hover
+- Quick action buttons: purple
+
+### Documents → Blue (#2563EB)  
+- DigiLocker header: blue accent
+- VC Active badge: blue glow
+- Anchored on Polygon badge: blue
+
+### Healthcare → Red (#DC2626)
+- ABHA header: red accent  
+- Health profile card: red border top
+- Medical record tags: red/pink
+
+### Payments → Amber (#D97706)
+- Total pending: amber gradient banner
+- Overdue badge: amber/red
+- Pay button: amber
+
+### Schemes → Emerald (#059669)
+- Active scheme badge: emerald
+- Check eligibility button: emerald
+- Category tags: emerald tint
+
+### Credentials → Cyan (#0891B2)
+- VC card borders: cyan glow
+- Share VC button: cyan
+- Blockchain badge: cyan
+
+---
+
+## COMPONENT LIBRARY
+
+### 1. StatCard (Dashboard stats)
+\`\`\`
+┌──────────────────────┐
+│ 🔵 [icon]            │
+│                      │
+│ 4                    │  ← 32px bold
+│ Documents            │  ← 13px muted
+│ ▂▃▅▄ sparkline      │  ← optional trend
+└──────────────────────┘
+Glass card, accent-colored icon bg circle (40px)
+Hover: lift + glow in section color
+\`\`\`
+
+### 2. CredentialCard (Documents page)
+\`\`\`
+┌──────────────────────────────────────┐  ← cyan top border
+│ Aadhaar Card          [active] [VC✓] │
+│ XXXX XXXX 4521                       │
+│ ✅ Anchored · Block #45,156,205      │  ← monospace font
+│                                      │
+│ 📄 Aadhaar                           │
+│ Issued: 15 Aug 2015                  │
+│                                      │
+│ [↓ Download] [⟳ Share VC] [✓ Verify]│
+└──────────────────────────────────────┘
+\`\`\`
+
+### 3. SchemeCard (Schemes page)
+\`\`\`
+┌──────────────────────────────┐  ← emerald top border
+│ [Agriculture]    [● Active]  │
+│ PM-KISAN                     │  ← 20px bold
+│                              │
+│ Pradhan Mantri Kisan...      │  ← 13px secondary
+│                              │
+│ ⚡ Key Benefits              │
+│ ₹6,000/year in 3 installments│
+│                              │
+│ [    Check Eligibility    ]  │  ← emerald button
+└──────────────────────────────┘
+\`\`\`
+
+### 4. Button System
+\`\`\`css
+/* Primary — uses section accent */
+.btn-primary {
+  background: var(--section-accent);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.btn-primary:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(var(--section-accent-rgb), 0.4);
+}
+.btn-primary:active {
+  transform: translateY(0px);
+}
+
+/* Glass secondary */
+.btn-secondary {
+  background: var(--glass-bg);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  padding: 10px 20px;
+  border-radius: 10px;
+}
+
+/* Danger */
+.btn-danger {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #EF4444;
+}
+\`\`\`
+
+### 5. Badge System
+\`\`\`css
+/* Status badges */
+.badge-verified  { bg: rgba(34,197,94,0.15);  color: #22C55E; border: 1px solid rgba(34,197,94,0.3) }
+.badge-active    { bg: rgba(59,130,246,0.15); color: #3B82F6; border: 1px solid rgba(59,130,246,0.3) }
+.badge-pending   { bg: rgba(245,158,11,0.15); color: #F59E0B; border: 1px solid rgba(245,158,11,0.3) }
+.badge-revoked   { bg: rgba(239,68,68,0.15);  color: #EF4444; border: 1px solid rgba(239,68,68,0.3) }
+
+/* Category badges */
+.badge-category {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+\`\`\`
+
+### 6. Page Header Pattern
+\`\`\`
+┌─────────────────────────────────────────┐
+│  [Section Icon]  Page Title             │
+│                  Subtitle text here     │
+│                              [Actions]  │
+└─────────────────────────────────────────┘
+Icon: 40px circle with section accent bg + white icon
+Title: 24px bold, text-primary
+Subtitle: 14px text-secondary
+Bottom border: 1px section-accent gradient line
+\`\`\`
+
+### 7. Blockchain Transaction Badge
+\`\`\`
+✅ Anchored on Polygon · Block #45,156,205  →
+[Monospace font, cyan color, clickable → Polygonscan]
+\`\`\`
+
+### 8. DID Display Component
+\`\`\`
+did:polygon:0x7f3a...b9c2  [copy icon]
+[Monospace, muted color, truncated middle]
+\`\`\`
+
+### 9. Skeleton Loaders
+\`\`\`css
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-elevated) 25%,
+    var(--bg-overlay) 50%,
+    var(--bg-elevated) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+\`\`\`
+
+### 10. Toast Notifications (react-hot-toast config)
+\`\`\`typescript
+// Success: emerald glass
+// Error: red glass  
+// Info: blue glass
+// Warning: amber glass
+
+toastStyle = {
+  background: 'var(--glass-bg)',
+  backdropFilter: 'blur(12px)',
+  border: '1px solid var(--border-default)',
+  color: 'var(--text-primary)',
+  borderRadius: '12px',
+  fontSize: '14px',
+}
+\`\`\`
+
+---
+
+## ANIMATION SYSTEM (Framer Motion)
+
+### Page Transition (wrap every page)
+\`\`\`typescript
+const pageVariants = {
+  initial: { opacity: 0, y: 16, filter: 'blur(4px)' },
+  animate: { 
+    opacity: 1, y: 0, filter: 'blur(0px)',
+    transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }
+  },
+  exit: { 
+    opacity: 0, y: -8,
+    transition: { duration: 0.2 }
+  }
+}
+\`\`\`
+
+### Card Stagger (lists of cards)
+\`\`\`typescript
+const containerVariants = {
+  animate: { transition: { staggerChildren: 0.08 } }
+}
+const cardVariants = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+}
+\`\`\`
+
+### Stat Counter (numbers count up on load)
+\`\`\`typescript
+// Use framer-motion useMotionValue + useSpring
+// Count from 0 to value over 1.2s on mount
+\`\`\`
+
+### Button Micro-interactions
+\`\`\`typescript
+whileHover={{ scale: 1.02, y: -1 }}
+whileTap={{ scale: 0.98 }}
+\`\`\`
+
+### Sidebar Nav Item
+\`\`\`typescript
+// Active indicator slides in from left
+// Icon has subtle rotation on hover (5deg)
+\`\`\`
+
+---
+
+## BACKGROUND DESIGN
+
+### Dark mode background
+\`\`\`css
+body {
+  background-color: var(--bg-surface);
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, 
+      rgba(124,58,237,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, 
+      rgba(37,99,235,0.08) 0%, transparent 50%);
+  min-height: 100vh;
+}
+\`\`\`
+
+### Light mode background
+\`\`\`css
+body[data-theme="light"] {
+  background-color: #F8FAFC;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%,
+      rgba(109,40,217,0.06) 0%, transparent 60%);
+}
+\`\`\`
+
+---
+
+## DASHBOARD REDESIGN SPEC
+
+### Welcome Banner
+\`\`\`
+┌─────────────────────────────────────────────────┐
+│  Welcome back,                                  │
+│  Rahul Kumar                    40px bold       │
+│  ✓ SSI20240001  [Verified]                      │
+│                                                 │
+│  [gradient: purple-left → blue-right]           │
+│  [subtle mesh/noise texture overlay]            │
+│  [Polygon Mumbai · All systems live →]  right   │
+└─────────────────────────────────────────────────┘
+\`\`\`
+
+### Stat Row (4 cards)
+Each card: glass, section accent color icon
+- Documents → Blue icon
+- Pending Bills → Amber icon  
+- Schemes → Emerald icon
+- Pending Forms → Purple icon
+
+### Quick Access Grid (6 tiles)
+Larger tiles, section accent gradient background
+Icon: 48px, white
+Label: 16px bold
+Subtle description: 12px
+
+### Recent Activity Feed
+Timeline with colored dots per action type
+Tx hashes in monospace, truncated, clickable
+
+---
+
+## TAILWIND CONFIG
+
+\`\`\`typescript
+// tailwind.config.ts
+export default {
+  darkMode: ['attribute', '[data-theme="dark"]'],
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+      },
+      colors: {
+        glass: {
+          DEFAULT: 'rgba(255,255,255,0.05)',
+          hover: 'rgba(255,255,255,0.08)',
+          border: 'rgba(255,255,255,0.08)',
+        },
+        accent: {
+          dashboard:   '#7C3AED',
+          documents:   '#2563EB',
+          healthcare:  '#DC2626',
+          payments:    '#D97706',
+          schemes:     '#059669',
+          credentials: '#0891B2',
+          verify:      '#16A34A',
+          security:    '#9333EA',
+          ai:          '#F59E0B',
+          atm:         '#3B82F6',
+        }
+      },
+      backdropBlur: { glass: '12px' },
+      borderRadius: {
+        card: '16px',
+        btn: '10px',
+        badge: '20px',
+      },
+      boxShadow: {
+        glass: '0 4px 16px rgba(0,0,0,0.5)',
+        'glow-purple': '0 0 24px rgba(124,58,237,0.25)',
+        'glow-blue': '0 0 24px rgba(37,99,235,0.25)',
+        'glow-green': '0 0 24px rgba(5,150,105,0.25)',
+      },
+      animation: {
+        shimmer: 'shimmer 1.5s infinite',
+        'fade-in': 'fadeIn 0.3s ease',
+        'slide-up': 'slideUp 0.3s ease',
+      }
+    }
+  }
+}
+\`\`\`
+
+---
+
+## THEME TOGGLE IMPLEMENTATION
+
+\`\`\`typescript
+// useTheme.ts (Zustand)
+const useThemeStore = create((set) => ({
+  theme: 'dark',
+  toggle: () => set((s) => {
+    const next = s.theme === 'dark' ? 'light' : 'dark'
+    document.documentElement.setAttribute('data-theme', next)
+    localStorage.setItem('theme', next)
+    return { theme: next }
+  })
+}))
+
+// On app init, read from localStorage
+// Apply data-theme attribute to <html> element
+\`\`\`
+
+---
+
+## NPM PACKAGES REQUIRED
+\`\`\`bash
+npm install framer-motion
+npm install react-hot-toast
+npm install @radix-ui/react-dialog
+npm install @radix-ui/react-dropdown-menu
+npm install @radix-ui/react-tooltip
+npm install @radix-ui/react-switch
+npm install lucide-react
+npm install clsx
+npm install tailwind-merge
+npm install class-variance-authority
+\`\`\`
+
+---
+
+## BUILD ORDER FOR UI
+
+Step UI-1: Set up design tokens (CSS vars) + Tailwind config
+Step UI-2: Build theme toggle (dark/light) + useTheme store
+Step UI-3: Redesign Sidebar with section groups + DID display
+Step UI-4: Build glass card + button + badge component library
+Step UI-5: Add Framer Motion page transitions wrapper
+Step UI-6: Redesign Dashboard page
+Step UI-7: Redesign Documents/DigiLocker page
+Step UI-8: Redesign Healthcare/ABHA page
+Step UI-9: Redesign Payments page
+Step UI-10: Redesign Schemes page
+Step UI-11: Redesign Forms page
+Step UI-12: Build Credentials page (new)
+Step UI-13: Add skeleton loaders to all async components
+Step UI-14: Add toast notifications throughout
+Step UI-15: Mobile responsiveness pass
+
+## Output Format
+For each UI step, give me:
+1. Exact file paths
+2. Complete component code (TypeScript + Tailwind)
+3. No placeholder comments — full working code only
+4. Show me how the component looks described in ASCII if complex
+
+Start with Step UI-1.
