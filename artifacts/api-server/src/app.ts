@@ -6,26 +6,27 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const pinoMiddleware = (pinoHttp as any)({ 
-  logger,
-  serializers: {
-    req(req: any) {
-      return {
-        id: req.id,
-        method: req.method,
-        url: req.url?.split("?")[0],
-      };
+app.use(
+  // @ts-expect-error pino-http v10 ESM type interop issue
+  pinoHttp({
+    logger,
+    serializers: {
+      req(req: any) {
+        return {
+          id: req.id,
+          method: req.method,
+          url: req.url?.split("?")[0],
+        };
+      },
+      res(res: any) {
+        return {
+          statusCode: res.statusCode,
+        };
+      },
     },
-    res(res: any) {
-      return {
-        statusCode: res.statusCode,
-      };
-    },
-  },
-});
+  }),
+);
 
-app.use(pinoMiddleware);
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
