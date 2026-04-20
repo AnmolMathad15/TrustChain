@@ -42,11 +42,7 @@ TrustChain puts identity back in the hands of users using blockchain-anchored **
 - ✅ Share only what you need — selective disclosure
 - ✅ Verifiers validate authenticity on-chain, without contacting the issuer
 
----
 
-## 🎬 Demo
-
-> Add demo link or screen recording here
 
 ---
 
