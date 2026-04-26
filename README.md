@@ -1,8 +1,8 @@
 <div align="center">
 
 <!-- HERO BANNER -->
-<img src="banner<img width="1024" height="1536" alt="banner" src="https://github.com/user-attachments/assets/9142d135-ee74-48c7-a711-68cfaa9d7d3a" />
-.png" width="100%" />
+<img width="1024" height="1536" alt="banner" src="https://github.com/user-attachments/assets/9142d135-ee74-48c7-a711-68cfaa9d7d3a" />
+
 
 <br><br>
 </div>
